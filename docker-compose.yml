@@ -4,21 +4,67 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/maBase
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: devpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: prometheus,health,info
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - monitoring-net
+    restart: on-failure
+
   db:
-    image: mysql:latest
+    image: mysql:8.0
     environment:
-      - MYSQL_DATABASE=maBase
-      # - MYSQL_USER=root
-      - MYSQL_ROOT_PASSWORD=mypassword
+      MYSQL_DATABASE: maBase
+      MYSQL_USER: devuser
+      MYSQL_PASSWORD: devpassword
+      MYSQL_ROOT_PASSWORD: rootpassword
     ports:
       - "3306:3306"
     volumes:
       - ./data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "devuser", "-pdevpassword"]
+      interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - monitoring-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - app
+    networks:
+      - monitoring-net
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-net
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring-net
+
+networks:
+  monitoring-net:
+    driver: bridge

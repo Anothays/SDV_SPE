@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.13-SNAPSHOT</version>
+        <version>3.4.1</version>
         <relativePath/>
     </parent>
 
@@ -24,11 +24,11 @@
     </properties>
 
     <dependencies>
-		
-		<dependency>
-		    <groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
 
         <!-- 🌐 Web / REST -->
         <dependency>
@@ -40,6 +40,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Expose /actuator/health, /actuator/prometheus, etc. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Format Prometheus pour Micrometer -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
         <!-- 🛢 MySQL Driver -->
@@ -85,7 +97,7 @@
         </plugins>
     </build>
 
-    <!-- SNAPSHOT repository (OK pour projet école / tests) -->
+    <!-- SNAPSHOT repository (OK pour projet école / tests)
     <repositories>
         <repository>
             <id>spring-snapshots</id>
@@ -96,16 +108,18 @@
             </releases>
         </repository>
     </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </pluginRepository>
-    </pluginRepositories>
+    -->
+    <!--
+        <pluginRepositories>
+            <pluginRepository>
+                <id>spring-snapshots</id>
+                <name>Spring Snapshots</name>
+                <url>https://repo.spring.io/snapshot</url>
+                <releases>
+                    <enabled>false</enabled>
+                </releases>
+            </pluginRepository>
+        </pluginRepositories>
+        -->
 
 </project>
