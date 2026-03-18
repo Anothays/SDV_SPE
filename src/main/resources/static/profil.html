@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Création Profil</title>
+</head>
+<body>
+
+<h1>Créer un profil</h1>
+
+<input type="text" id="name" placeholder="Nom du profil" />
+<button onclick="createProfil()">Créer</button>
+
+<p id="result"></p>
+
+<script>
+    function createProfil() {
+
+        const name = document.getElementById("name").value;
+
+        fetch("/api/profils", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: name
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("result").innerText =
+                "Profil créé avec l'id : " + data.id;
+        })
+        .catch(error => {
+            console.error(error);
+            document.getElementById("result").innerText =
+                "Erreur lors de la création";
+        });
+    }
+</script>
+
+</body>
+</html>
