@@ -1,0 +1,106 @@
+name: Performance Tests (JMeter)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_plan:
+        description: 'Test plan to run'
+        required: true
+        default: 'profil-api-load-test'
+        type: choice
+        options:
+          - profil-api-load-test
+          - profil-api-stress-test
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'jmeter/test-plans/**'
+
+jobs:
+  performance-tests:
+    name: Run JMeter Performance Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start application stack
+        run: |
+          docker compose up -d --build app db prometheus grafana alertmanager
+          echo "Waiting for application to be ready..."
+
+      - name: Wait for app to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "App is healthy after ${i}*5 seconds"
+              break
+            fi
+            echo "Attempt $i: status=$STATUS, waiting 5s..."
+            sleep 5
+          done
+          curl -f http://localhost:8080/actuator/health || (echo "App did not start in time" && docker compose logs app && exit 1)
+
+      - name: Build JMeter Docker image
+        run: docker compose build jmeter
+
+      - name: Run JMeter load test
+        run: |
+          TEST_PLAN="${{ github.event.inputs.test_plan || 'profil-api-load-test' }}"
+          echo "Running test plan: ${TEST_PLAN}.jmx"
+          docker compose --profile testing run --rm \
+            -e JMETER_OPTS="-Jhost=app -Jport=8080" \
+            jmeter \
+            -n \
+            -t /test-plans/${TEST_PLAN}.jmx \
+            -Jhost=app \
+            -Jport=8080 \
+            -l /results/${TEST_PLAN}-result.jtl \
+            -e \
+            -o /reports/${TEST_PLAN}
+
+      - name: Upload JTL results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jmeter-jtl-${{ github.run_number }}
+          path: jmeter/results/*.jtl
+          retention-days: 30
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jmeter-report-${{ github.run_number }}
+          path: jmeter/reports/
+          retention-days: 30
+
+      - name: Check error rate threshold
+        run: |
+          TEST_PLAN="${{ github.event.inputs.test_plan || 'profil-api-load-test' }}"
+          JTL_FILE="jmeter/results/${TEST_PLAN}-result.jtl"
+          if [ -f "$JTL_FILE" ]; then
+            TOTAL=$(tail -n +2 "$JTL_FILE" | wc -l)
+            ERRORS=$(tail -n +2 "$JTL_FILE" | awk -F',' '{if($8=="false") count++} END {print count+0}')
+            if [ "$TOTAL" -gt 0 ]; then
+              ERROR_PCT=$(echo "scale=2; $ERRORS * 100 / $TOTAL" | bc)
+              echo "Total requests: $TOTAL | Errors: $ERRORS | Error rate: ${ERROR_PCT}%"
+              ERROR_INT=$(echo "$ERROR_PCT" | cut -d. -f1)
+              if [ "$ERROR_INT" -gt 10 ]; then
+                echo "ERROR: Error rate ${ERROR_PCT}% exceeds 10% threshold!"
+                exit 1
+              fi
+              echo "Error rate ${ERROR_PCT}% is within acceptable threshold."
+            fi
+          fi
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v

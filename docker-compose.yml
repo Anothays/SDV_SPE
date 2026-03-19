@@ -42,6 +42,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     depends_on:
       - app
     networks:
@@ -68,6 +69,35 @@ services:
     networks:
       - monitoring-net
 
+  jmeter:
+    platform: linux/amd64
+    build:
+      context: ./jmeter
+      dockerfile: Dockerfile
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "rm -rf /reports/load && mkdir -p /reports/load
+      && rm -rf /results/load-test-result.jtl
+      && jmeter -n -t /test-plans/profil-api-load-test.jmx
+      -l /results/load-test-result.jtl -e -o /reports/load -L DEBUG
+      ; echo 'Test done, waiting 300s for Prometheus to scrape...'
+      ; sleep 300"
+    volumes:
+      - ./jmeter/test-plans:/test-plans
+      - ./jmeter/results:/results
+      - ./jmeter/reports:/reports
+    ports:
+      - "9270:9270"
+    depends_on:
+      - app
+    networks:
+      - monitoring-net
+    profiles:
+      - testing
+
 networks:
   monitoring-net:
     driver: bridge
+
+volumes:
+  prometheus_data:
