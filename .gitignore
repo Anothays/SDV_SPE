@@ -33,3 +33,6 @@ build/
 .vscode/
 
 data
+
+jmeter/results
+jmeter/reports
