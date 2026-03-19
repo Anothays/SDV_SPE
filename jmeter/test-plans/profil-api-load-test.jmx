@@ -2,7 +2,7 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Profil API - Load Test" enabled="true">
-      <stringProp name="TestPlan.comments">Load test: 50 users, ramp-up 60s, duration 300s - POST /api/profils only</stringProp>
+      <stringProp name="TestPlan.comments">Load test: 50 users, ramp-up 15s, duration 60s - POST /api/profils only</stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -32,9 +32,9 @@
           <intProp name="LoopController.loops">-1</intProp>
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">50</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">60</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">15</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">300</stringProp>
+        <stringProp name="ThreadGroup.duration">60</stringProp>
         <stringProp name="ThreadGroup.delay">0</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
@@ -140,7 +140,7 @@
         </ResultCollector>
         <hashTree/>
 
-        <!-- Prometheus Backend Listener (johrstrom plugin) -->
+        <!-- Prometheus Backend Listener (johrstrom plugin) - pull mode on port 9270 -->
         <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="Prometheus Listener" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
