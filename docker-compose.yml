@@ -69,27 +69,34 @@ services:
     networks:
       - monitoring-net
 
+  influxdb:
+    image: influxdb:1.8
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_DB: jmeter
+      INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    networks:
+      - monitoring-net
+
   jmeter:
     platform: linux/amd64
-    build:
-      context: ./jmeter
-      dockerfile: Dockerfile
-    entrypoint: ["/bin/sh", "-c"]
+    image: justb4/jmeter:latest
+    entrypoint: [ "/bin/sh", "-c" ]
     command: >
-      "rm -rf /reports/load && mkdir -p /reports/load
-      && rm -rf /results/load-test-result.jtl
+      "rm -f /results/load-test-result.jtl
+      && rm -rf /reports/load
+      && mkdir -p /reports/load
       && jmeter -n -t /test-plans/profil-api-load-test.jmx
       -l /results/load-test-result.jtl -e -o /reports/load -L DEBUG
-      ; echo 'Test done, waiting 300s for Prometheus to scrape...'
-      ; sleep 300"
+      ; echo 'Test done'"
     volumes:
       - ./jmeter/test-plans:/test-plans
       - ./jmeter/results:/results
       - ./jmeter/reports:/reports
-    ports:
-      - "9270:9270"
     depends_on:
       - app
+      - influxdb
     networks:
       - monitoring-net
     profiles:
