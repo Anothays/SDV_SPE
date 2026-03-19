@@ -14,3 +14,11 @@ scrape_configs:
         labels:
           application: 'MaDemo'
     metrics_path: '/actuator/prometheus'
+
+  - job_name: 'jmeter'
+    static_configs:
+      - targets: ['jmeter:9270']
+        labels:
+          application: 'JMeter'
+    metrics_path: '/metrics'
+    scrape_interval: 5s

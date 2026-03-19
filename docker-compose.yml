@@ -70,6 +70,26 @@ services:
     networks:
       - monitoring-net
 
+  # JMeter - déclenché manuellement via le profil "testing"
+  # Usage: docker compose --profile testing run --rm jmeter \
+  #   -n -t /test-plans/profil-api-load-test.jmx \
+  #   -l /results/result.jtl -e -o /reports/load
+  jmeter:
+    platform: linux/amd64
+    build:
+      context: ./jmeter
+      dockerfile: Dockerfile
+    volumes:
+      - ./jmeter/test-plans:/test-plans
+      - ./jmeter/results:/results
+      - ./jmeter/reports:/reports
+    ports:
+      - "9270:9270"
+    networks:
+      - monitoring-net
+    profiles:
+      - testing
+
 networks:
   monitoring-net:
     driver: bridge
