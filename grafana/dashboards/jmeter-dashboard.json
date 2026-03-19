@@ -9,8 +9,8 @@
     },
     {
       "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
+      "id": "influxdb",
+      "name": "InfluxDB",
       "version": "1.0.0"
     },
     {
@@ -24,16 +24,21 @@
       "id": "stat",
       "name": "Stat",
       "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
     }
   ],
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "datasource": { "type": "influxdb", "uid": "influxdb" },
+        "enable": true,
+        "iconColor": "red",
+        "name": "Test Events",
+        "query": "SELECT \"text\" FROM \"events\" WHERE $timeFilter",
+        "rawQuery": true,
+        "showIn": 0,
+        "titleFormat": "{{text}}"
+      }
+    ]
   },
   "description": "JMeter performance test results - MaDemo API",
   "editable": true,
@@ -50,23 +55,23 @@
       "type": "row"
     },
     {
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "color": "green", "value": null },
-                { "color": "yellow", "value": 1000 },
-                { "color": "red", "value": 2000 }
-              ]
-            },
-            "unit": "ms"
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 2000 }
+            ]
           },
-          "overrides": []
+          "unit": "ms"
         },
-        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "id": 1,
       "options": {
         "colorMode": "background",
@@ -84,15 +89,16 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "avg(jmeter_rt_avg{application='JMeter'}) * 1000",
-          "legendFormat": "Avg RT",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"avg\") FROM \"jmeter\" WHERE $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -126,15 +132,16 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "avg(jmeter_fail_ratio{application='JMeter'}) * 100",
-          "legendFormat": "Error %",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT sum(\"countError\") / sum(\"count\") * 100 FROM \"jmeter\" WHERE $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -166,15 +173,16 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(jmeter_all_count{application='JMeter'}[1m]))",
-          "legendFormat": "req/s",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"hit\") FROM \"jmeter\" WHERE $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -208,10 +216,11 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(jmeter_running_threads{application='JMeter'})",
-          "legendFormat": "Threads",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"meanAT\") FROM \"jmeter\" WHERE $timeFilter",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
@@ -223,28 +232,17 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
             "showPoints": "never",
-            "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "spanNulls": false
           },
           "unit": "ms"
         },
@@ -260,25 +258,22 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "jmeter_rt_avg{application='JMeter'} * 1000",
-          "legendFormat": "{{transaction}}",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"avg\") FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval), \"transaction\" fill(null)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
-            "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
             "showPoints": "never",
@@ -294,14 +289,29 @@
         "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi", "sort": "none" }
       },
-      "title": "Response Time 90th Percentile",
+      "title": "Response Time Percentiles (p90 / p95 / p99)",
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "jmeter_rt_pct90{application='JMeter'} * 1000",
-          "legendFormat": "p90 - {{transaction}}",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"pct90.0\") FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval), \"transaction\" fill(null)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        },
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"pct95.0\") FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval), \"transaction\" fill(null)",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "time_series"
+        },
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"pct99.0\") FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval), \"transaction\" fill(null)",
+          "rawQuery": true,
+          "refId": "C",
+          "resultFormat": "time_series"
         }
       ]
     },
@@ -313,7 +323,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -339,15 +349,16 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(jmeter_all_count{application='JMeter'}[1m])",
-          "legendFormat": "{{transaction}}",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"hit\") FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval), \"transaction\" fill(null)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -380,10 +391,11 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "jmeter_fail_ratio{application='JMeter'} * 100",
-          "legendFormat": "{{transaction}}",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT sum(\"countError\") / sum(\"count\") * 100 FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval), \"transaction\" fill(null)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     },
@@ -395,7 +407,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "influxdb", "uid": "influxdb" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -421,10 +433,11 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "jmeter_running_threads{application='JMeter'}",
-          "legendFormat": "{{thread_group}}",
-          "refId": "A"
+          "datasource": { "type": "influxdb", "uid": "influxdb" },
+          "query": "SELECT mean(\"meanAT\") AS \"mean\", max(\"maxAT\") AS \"max\", min(\"minAT\") AS \"min\" FROM \"jmeter\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
         }
       ]
     }
