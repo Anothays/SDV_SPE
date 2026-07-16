@@ -141,11 +141,16 @@ Simule une **montée progressive en charge** pour identifier le point de rupture
 
 ### Lancer les tests
 
+Le plan de test exécuté est piloté par la variable d'environnement `TEST_PLAN` (défaut : `profil-api-load-test.jmx`). Les fichiers `.jtl` et rapports HTML générés sont nommés d'après le plan de test, donc load et stress ne s'écrasent pas.
+
 ```bash
-# Test de charge uniquement
+# Test de charge (défaut, TEST_PLAN non défini)
 docker compose --profile testing up jmeter
 
-# Tous les services + test
+# Test de stress
+TEST_PLAN=profil-api-stress-test.jmx docker compose --profile testing up jmeter
+
+# Tous les services + test de charge
 docker compose --profile testing up --build
 ```
 
@@ -187,8 +192,8 @@ docker compose --profile testing up --build
 
 ### Améliorations prioritaires
 
-- [ ] **Intégrer le test de stress dans le service JMeter** du `docker-compose.yml`
-  Le service JMeter actuel n'exécute que `profil-api-load-test.jmx`. Il serait utile d'ajouter une variable d'environnement ou un second service pour lancer `profil-api-stress-test.jmx` à la demande.
+- [x] **Intégrer le test de stress dans le service JMeter** du `docker-compose.yml`
+  Le plan de test est piloté par la variable d'environnement `TEST_PLAN` (défaut : `profil-api-load-test.jmx`), permettant de lancer `profil-api-stress-test.jmx` à la demande sans dupliquer le service.
 
 ### Métriques fonctionnelles
 
