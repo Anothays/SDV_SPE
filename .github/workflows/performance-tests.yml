@@ -56,15 +56,9 @@ jobs:
           TEST_PLAN="${{ github.event.inputs.test_plan || 'profil-api-load-test' }}"
           echo "Running test plan: ${TEST_PLAN}.jmx"
           docker compose --profile testing run --rm \
-            -e JMETER_OPTS="-Jhost=app -Jport=8080" \
-            jmeter \
-            -n \
-            -t /test-plans/${TEST_PLAN}.jmx \
-            -Jhost=app \
-            -Jport=8080 \
-            -l /results/${TEST_PLAN}-result.jtl \
-            -e \
-            -o /reports/${TEST_PLAN}
+            -e TEST_PLAN="${TEST_PLAN}.jmx" \
+            -e JMETER_EXTRA_ARGS="-Jhost=app -Jport=8080" \
+            jmeter
 
       - name: Upload JTL results
         uses: actions/upload-artifact@v4

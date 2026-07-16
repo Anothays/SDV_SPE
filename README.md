@@ -124,23 +124,22 @@ Tous les services sont définis dans `docker-compose.yml` et communiquent sur le
 
 Les volumes permettent de persister des données ou d'injecter de la configuration dans les containers.
 
-#### `./data:/var/lib/mysql`
-Persiste les données MySQL sur le disque local. Sans ce volume, toutes les données seraient perdues à chaque `docker compose down`.
+> **Note** : les données MySQL ne sont volontairement **pas persistées** (pas de volume sur `/var/lib/mysql`) — chaque `docker compose down` repart d'une base vide, ce qui garantit des tests reproductibles.
 
-#### `./prometheus.yml:/etc/prometheus/prometheus.yml`
+#### `./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml`
 Injecte la configuration de scraping dans Prometheus. Permet de modifier les cibles sans reconstruire l'image.
 
 #### `prometheus_data:/prometheus`
 Volume Docker nommé qui persiste la base de données time-series de Prometheus entre les redémarrages.
 
-#### `./grafana/provisioning:/etc/grafana/provisioning`
+#### `./config/grafana/provisioning:/etc/grafana/provisioning`
 Permet à Grafana de **charger automatiquement** les datasources et les dashboards au démarrage, sans action manuelle dans l'UI.
 
 Ce dossier contient deux sous-dossiers :
 - `datasources/` — fichiers YAML déclarant les sources de données (Prometheus, InfluxDB)
 - `dashboards/` — fichier YAML indiquant à Grafana où trouver les fichiers JSON des dashboards
 
-#### `./grafana/dashboards:/var/lib/grafana/dashboards`
+#### `./config/grafana/dashboards:/var/lib/grafana/dashboards`
 Contient les fichiers JSON des dashboards Grafana. Tout fichier `.json` déposé ici est automatiquement importé au démarrage via le provisioning. Cela permet de **versionner les dashboards dans Git** et de les déployer sans intervention manuelle.
 
 Dashboards disponibles :
@@ -150,9 +149,10 @@ Dashboards disponibles :
 - `kafka-client-metrics.json` — métriques client Kafka (producteur/consommateur) de l'application
 
 #### Volumes JMeter
-- `./jmeter/test-plans:/test-plans` — plans de test `.jmx`
-- `./jmeter/results:/results` — fichiers de résultats `.jtl`
-- `./jmeter/reports:/reports` — rapports HTML générés après chaque test
+- `./config/jmeter/run-test.sh:/scripts/run-test.sh` — script d'exécution des tests (versionné)
+- `./config/jmeter/test-plans:/test-plans` — plans de test `.jmx`
+- `./config/jmeter/results:/results` — fichiers de résultats `.jtl`
+- `./config/jmeter/reports:/reports` — rapports HTML générés après chaque test
 
 ---
 
@@ -187,18 +187,19 @@ Simule une **montée progressive en charge** pour identifier le point de rupture
 
 ### Lancer les tests
 
-Le plan de test exécuté est piloté par la variable d'environnement `TEST_PLAN` (défaut : `profil-api-load-test.jmx`). Les fichiers `.jtl` et rapports HTML générés sont nommés d'après le plan de test, donc load et stress ne s'écrasent pas.
+La logique d'exécution est dans `jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `profil-api-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
 
 ```bash
-# Test de charge (défaut, TEST_PLAN non défini)
-docker compose --profile testing up jmeter
+# Via le Makefile (recommandé)
+make load-test
+make stress-test
 
-# Test de stress
-TEST_PLAN=profil-api-stress-test.jmx docker compose --profile testing up jmeter
-
-# Tous les services + test de charge
-docker compose --profile testing up --build
+# Équivalent docker compose
+docker compose --profile testing run --rm jmeter
+TEST_PLAN=profil-api-stress-test.jmx docker compose --profile testing run --rm jmeter
 ```
+
+Autres cibles : `make up`, `make down`, `make logs`, `make help`.
 
 ---
 

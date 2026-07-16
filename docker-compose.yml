@@ -29,8 +29,6 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
     ports:
       - "3306:3306"
-    volumes:
-      - ./data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "devuser", "-pdevpassword"]
       interval: 10s
@@ -44,7 +42,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     depends_on:
       - app
@@ -58,8 +56,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
     networks:
@@ -106,24 +104,34 @@ services:
     networks:
       - monitoring-net
 
+  akhq:
+    image: tchiotludo/akhq:latest
+    ports:
+      - "8081:8080"
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            local:
+              properties:
+                bootstrap.servers: "kafka:9092"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+
   jmeter:
     platform: linux/amd64
     image: justb4/jmeter:latest
-    entrypoint: [ "/bin/sh", "-c" ]
+    entrypoint: [ "/bin/sh", "/scripts/run-test.sh" ]
     environment:
       TEST_PLAN: ${TEST_PLAN:-profil-api-load-test.jmx}
-    command: >
-      "TEST_NAME=$${TEST_PLAN%.jmx}
-      && rm -f /results/$${TEST_NAME}-result.jtl
-      && rm -rf /reports/$${TEST_NAME}
-      && mkdir -p /reports/$${TEST_NAME}
-      && jmeter -n -t /test-plans/$${TEST_PLAN}
-      -l /results/$${TEST_NAME}-result.jtl -e -o /reports/$${TEST_NAME} -L DEBUG
-      ; echo 'Test done'"
     volumes:
-      - ./jmeter/test-plans:/test-plans
-      - ./jmeter/results:/results
-      - ./jmeter/reports:/reports
+      - ./config/jmeter/run-test.sh:/scripts/run-test.sh:ro
+      - ./config/jmeter/test-plans:/test-plans
+      - ./config/jmeter/results:/results
+      - ./config/jmeter/reports:/reports
     depends_on:
       - app
       - influxdb

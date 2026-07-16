@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-public class KafkaTopicConfig {
+class KafkaTopicConfig {
 
     public static final String PROFIL_CREATED_TOPIC = "profil-created";
 
