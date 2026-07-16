@@ -54,6 +54,12 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- 📨 Kafka (producteur / consommateur d'événements) -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
         <!-- 🛢 MySQL Driver -->
         <dependency>
             <groupId>com.mysql</groupId>

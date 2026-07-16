@@ -10,6 +10,7 @@ API REST Spring Boot avec une stack de monitoring complète : Prometheus, Grafan
 |-----------|------|
 | Spring Boot 3.4.1 + Java 17 | Application REST |
 | MySQL 8 | Base de données relationnelle |
+| Kafka (KRaft) | Broker de messages — événements métier |
 | Prometheus | Collecte des métriques (scraping) |
 | Grafana | Visualisation des métriques |
 | InfluxDB | Stockage des résultats JMeter |
@@ -71,6 +72,50 @@ Grafana se connecte à Prometheus pour visualiser les métriques en temps réel.
 
 ---
 
+## Messaging avec Kafka
+
+L'application publie un événement métier à chaque création de profil, selon une architecture orientée événements :
+
+```
+POST /api/profils
+      │
+      ▼
+ProfilService.saveProfil()
+      ├── 1. Sauvegarde MySQL (synchrone)
+      └── 2. Publication de l'événement sur le topic `profil-created` (asynchrone)
+                    │
+                    ▼
+            ProfilEventConsumer (@KafkaListener, groupe `mademo`)
+```
+
+### Composants
+
+| Classe | Rôle |
+|--------|------|
+| `kafka/KafkaTopicConfig` | Déclare le topic `profil-created` (1 partition, 1 réplique) |
+| `kafka/ProfilEventProducer` | Publie l'événement via `KafkaTemplate` (JSON) |
+| `kafka/ProfilEventConsumer` | Consomme l'événement et le journalise |
+
+**Résilience** : l'envoi Kafka est asynchrone — une panne du broker ne fait pas échouer la requête HTTP, l'erreur est seulement journalisée.
+
+### Broker
+
+Kafka tourne en mode **KRaft** (sans Zookeeper) dans Docker Compose, avec deux listeners :
+- `kafka:9092` — accès interne pour les containers du réseau `monitoring-net`
+- `localhost:9094` — accès depuis la machine hôte (développement local)
+
+En Docker, l'app utilise `SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092` ; en local, `spring.kafka.bootstrap-servers=localhost:9094` (application.properties).
+
+### Observabilité
+
+`spring-kafka` expose automatiquement les métriques **client** (producteur/consommateur de l'application) via Micrometer sur `/actuator/prometheus`. Le dashboard Grafana **Kafka Client (Micrometer)** (`kafka-client-metrics.json`) visualise :
+- débit et erreurs de publication, latence d'envoi vers le broker
+- débit de consommation, consumer lag, durée de traitement du `@KafkaListener`
+
+> Les métriques du **broker** lui-même (JMX) ne sont pas collectées — nécessiterait un `jmx-exporter` ou `kafka-exporter` (évolution possible).
+
+---
+
 ## Docker Compose
 
 Tous les services sont définis dans `docker-compose.yml` et communiquent sur le réseau interne `monitoring-net`.
@@ -102,6 +147,7 @@ Dashboards disponibles :
 - `jvm-micrometer.json` — métriques JVM de l'application Spring Boot
 - `apache-jmeter-influxdb.json` — résultats des tests JMeter en temps réel
 - `jmeter-dashboard.json` — vue synthétique des tests de charge
+- `kafka-client-metrics.json` — métriques client Kafka (producteur/consommateur) de l'application
 
 #### Volumes JMeter
 - `./jmeter/test-plans:/test-plans` — plans de test `.jmx`
@@ -210,12 +256,9 @@ docker compose --profile testing up --build
 
 ### Messaging
 
-- [ ] **Intégrer RabbitMQ ou Kafka**
-  Pour une architecture orientée événements, il serait pertinent d'ajouter un broker de messages :
-  - **RabbitMQ** : adapté pour des queues de tâches simples, routing flexible
-  - **Kafka** : adapté pour des flux de données à fort volume, event sourcing
-
-  Les deux s'intègrent nativement avec Spring Boot (`spring-rabbit` / `spring-kafka`) et exposent leurs métriques via Micrometer/Prometheus.
+- [x] **Intégrer Kafka** (voir section [Messaging avec Kafka](#messaging-avec-kafka))
+  Événement `profil-created` publié à chaque création de profil, consommé par un `@KafkaListener`. Métriques client exposées via Micrometer/Prometheus et visualisées dans le dashboard Grafana dédié.
+  Choix de Kafka plutôt que RabbitMQ : adapté aux flux à fort volume et à l'event sourcing, cohérent avec la vision plateforme de jeu (télémétrie joueurs, événements de matchs).
 
 ### Autres
 
