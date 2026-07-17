@@ -15,10 +15,10 @@ Le projet vise la **définition, justification et structuration** d'un backend r
 |---|---|
 | API REST sécurisée (Spring Boot) | ✅ implémentée (`POST /api/profils`) |
 | Persistance relationnelle (MySQL) | ✅ implémentée |
-| Événements métier (Kafka) | ✅ implémentés (`profil-created`, producteur + consommateur) |
+| Événements métier (Kafka) | ✅ implémentés (`players.profil.created`, producteur + consommateur) |
 | Observabilité (Prometheus + Grafana) | ✅ implémentée (JVM, HTTP, Kafka client) |
 | Tests de charge (JMeter + InfluxDB) | ✅ implémentés (load + stress) |
-| Alerting (Alertmanager) | ⚠️ démarré, règles à configurer |
+| Alerting (Alertmanager → Discord) | ✅ implémenté (4 règles : AppDown, 5xx, p99, lag Kafka) |
 | Domaines métier jeu (matchmaking, économie…) | 📋 conception (ce document) |
 
 ---
@@ -219,7 +219,7 @@ Implémenté dans MaDemo, généralisable tel quel à chaque service :
 - **Métriques clés suivies** : latence p95/p99 et taux d'erreur HTTP par endpoint, consumer lag par groupe, erreurs de publication Kafka, saturation du pool de connexions, mémoire/GC.
 - **Métriques métier** (à ajouter) : compteurs Micrometer (`profils.created.total`, `matches.found.total`, `transactions.amount.sum`) — le fonctionnel devient observable dans les mêmes dashboards.
 - **Logs** : logs techniques structurés (JSON) avec `correlationId` propagé jusqu'aux consommateurs Kafka — une action se suit de la requête HTTP à ses effets asynchrones. Logs fonctionnels = événements Kafka eux-mêmes (piste d'audit).
-- **Alertes** (règles Alertmanager à configurer — TODO du dépôt) : taux d'erreur 5xx > 1 % sur 5 min, p99 > 1 s, consumer lag croissant sur 10 min, cible de scrape down.
+- **Alertes** (implémentées dans MaDemo : `config/prometheus/alert-rules.yml`, notifications Discord via Alertmanager) : cible de scrape down (1 min), taux d'erreur 5xx > 1 %, p99 > 1 s, consumer lag Kafka > 100 messages. Chaque règle porte un `for:` qui filtre les pics isolés — on alerte sur les problèmes soutenus, pas sur les blips.
 
 ---
 
@@ -264,7 +264,7 @@ Implémenté dans MaDemo, généralisable tel quel à chaque service :
 - Description des domaines et services : §4–5
 - Diagrammes de flux et de séquence : §3, §8, §18
 - Justification des choix : dans chaque section
-- Support d'oral : ce document + démo live `MaDemo` (POST → événement Kafka visible dans AKHQ → métriques dans Grafana)
+- Support d'oral : ce document + démo live `MaDemo` (POST → événement Kafka visible dans AKHQ → métriques dans Grafana → arrêt de l'app ou stress test → alerte Discord en direct)
 
 ---
 
@@ -288,7 +288,7 @@ Implémenté dans MaDemo, généralisable tel quel à chaque service :
 | Responsabilité | Réalisation |
 |---|---|
 | Collecte de métriques | Prometheus, scrape 15 s, format OpenMetrics |
-| Seuils et alertes | règles Prometheus + Alertmanager (latence, 5xx, lag, cible down) |
+| Seuils et alertes | règles Prometheus + Alertmanager → Discord (latence p99, 5xx, lag Kafka, cible down) |
 | Tableaux de bord | Grafana, dashboards versionnés et provisionnés automatiquement |
 | Résultats de tests de charge | InfluxDB + JMeter (chaîne dédiée, même Grafana) |
 

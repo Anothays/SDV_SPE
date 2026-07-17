@@ -72,9 +72,48 @@ Grafana se connecte à Prometheus pour visualiser les métriques en temps réel.
 
 ---
 
+## Alerting avec Prometheus + Alertmanager
+
+**Division du travail** : Prometheus détecte (évalue les règles PromQL), Alertmanager notifie (déduplique, groupe, route vers Discord).
+
+### Règles d'alerte (`config/prometheus/alert-rules.yml`)
+
+| Alerte | Condition | Durée | Sévérité |
+|--------|-----------|-------|----------|
+| `AppDown` | cible de scrape injoignable | 1 min | critical |
+| `HighErrorRate` | > 1 % de réponses 5xx | 2 min | critical |
+| `HighLatencyP99` | p99 des requêtes HTTP > 1 s | 2 min | warning |
+| `KafkaConsumerLagHigh` | > 100 messages de lag | 5 min | warning |
+
+Le calcul du p99 nécessite les buckets d'histogramme, activés dans `application.properties` (`management.metrics.distribution.percentiles-histogram.http.server.requests=true`).
+
+### Notifications Discord
+
+Alertmanager route toutes les alertes vers un webhook Discord (`config/alertmanager/alertmanager.yml`). L'URL du webhook est lue depuis `config/alertmanager/discord_webhook_url` — fichier **gitignoré** (secret), monté dans le container. La résolution d'une alerte est aussi notifiée (`send_resolved`).
+
+### Tester la chaîne
+
+```bash
+docker stop app      # après ~1 min : alerte AppDown sur Discord
+docker start app     # notification "resolved"
+```
+
+UI de contrôle : http://localhost:9090/alerts (état des règles) · http://localhost:9093 (Alertmanager).
+
+---
+
 ## Messaging avec Kafka
 
-L'application publie un événement métier à chaque création de profil, selon une architecture orientée événements :
+Deux familles d'événements implémentées, aux caractéristiques volontairement opposées :
+
+| Topic | Famille | Partitions | Rétention | Clé |
+|-------|---------|-----------|-----------|-----|
+| `players.profil.created` | **Fait métier** — chaque message compte | 1 | défaut (7 j) | id du profil |
+| `telemetry.player.action` | **Télémétrie** — fort volume, valeur individuelle faible | 6 | 24 h | playerId |
+
+(3ᵉ famille — **état courant**, topic compacté — décrite dans `documents/ARCHITECTURE.md` §9, non implémentée.)
+
+### Flux 1 — fait métier
 
 ```
 POST /api/profils
@@ -82,19 +121,34 @@ POST /api/profils
       ▼
 ProfilService.saveProfil()
       ├── 1. Sauvegarde MySQL (synchrone)
-      └── 2. Publication de l'événement sur le topic `profil-created` (asynchrone)
+      └── 2. Publication de l'événement sur le topic `players.profil.created` (asynchrone)
                     │
                     ▼
             ProfilEventConsumer (@KafkaListener, groupe `mademo`)
+```
+
+### Flux 2 — télémétrie
+
+```
+POST /api/telemetry  ──► 202 Accepted immédiat (fire-and-forget, aucune écriture MySQL)
+      │
+      ▼
+topic telemetry.player.action (6 partitions)
+      │
+      ▼
+TelemetryEventConsumer (groupe `mademo-telemetry`, concurrency 3)
+      └── agrège en compteurs Micrometer `telemetry_player_actions_total{action=...}`
+          → visibles dans Prometheus/Grafana
 ```
 
 ### Composants
 
 | Classe | Rôle |
 |--------|------|
-| `kafka/KafkaTopicConfig` | Déclare le topic `profil-created` (1 partition, 1 réplique) |
-| `kafka/ProfilEventProducer` | Publie l'événement via `KafkaTemplate` (JSON) |
-| `kafka/ProfilEventConsumer` | Consomme l'événement et le journalise |
+| `kafka/KafkaTopicConfig` | Déclare les topics (partitions, rétention) |
+| `kafka/ProfilEventProducer` / `ProfilEventConsumer` | Fait métier : publication + journalisation |
+| `kafka/TelemetryEventProducer` / `TelemetryEventConsumer` | Télémétrie : publication fire-and-forget + agrégation Micrometer |
+| `controller/TelemetryController` | Endpoint d'ingestion `POST /api/telemetry` (202) |
 
 **Résilience** : l'envoi Kafka est asynchrone — une panne du broker ne fait pas échouer la requête HTTP, l'erreur est seulement journalisée.
 
@@ -185,21 +239,36 @@ Simule une **montée progressive en charge** pour identifier le point de rupture
 
 **Objectif** : trouver à partir de quel seuil les temps de réponse se dégradent ou des erreurs apparaissent.
 
+### Test de télémétrie — `telemetry-stress-test.jmx`
+
+Bombarde l'endpoint d'ingestion `POST /api/telemetry` (fire-and-forget vers Kafka).
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Utilisateurs simultanés | 100 |
+| Montée en charge | 10 secondes |
+| Durée totale | 60 secondes |
+| Assertion | HTTP 202 |
+
+**Objectif** : démontrer la chaîne complète d'ingestion — l'API encaisse (202 rapides), le topic absorbe, le consumer agrège, le débit apparaît dans Grafana, et le consumer lag est surveillé par l'alerte `KafkaConsumerLagHigh`.
+
 ### Lancer les tests
 
-La logique d'exécution est dans `jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `profil-api-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
+La logique d'exécution est dans `config/jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `profil-api-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
 
 ```bash
 # Via le Makefile (recommandé)
 make load-test
 make stress-test
+make telemetry-test
 
 # Équivalent docker compose
 docker compose --profile testing run --rm jmeter
 TEST_PLAN=profil-api-stress-test.jmx docker compose --profile testing run --rm jmeter
+TEST_PLAN=telemetry-stress-test.jmx docker compose --profile testing run --rm jmeter
 ```
 
-Autres cibles : `make up`, `make down`, `make logs`, `make help`.
+Autres cibles : `make setup`, `make down`, `make logs`, `make help`.
 
 ---
 
@@ -258,11 +327,11 @@ Autres cibles : `make up`, `make down`, `make logs`, `make help`.
 ### Messaging
 
 - [x] **Intégrer Kafka** (voir section [Messaging avec Kafka](#messaging-avec-kafka))
-  Événement `profil-created` publié à chaque création de profil, consommé par un `@KafkaListener`. Métriques client exposées via Micrometer/Prometheus et visualisées dans le dashboard Grafana dédié.
+  Événement `players.profil.created` publié à chaque création de profil, consommé par un `@KafkaListener`. Métriques client exposées via Micrometer/Prometheus et visualisées dans le dashboard Grafana dédié.
   Choix de Kafka plutôt que RabbitMQ : adapté aux flux à fort volume et à l'event sourcing, cohérent avec la vision plateforme de jeu (télémétrie joueurs, événements de matchs).
 
 ### Autres
 
-- [ ] Configurer les règles d'alerting dans Alertmanager (actuellement démarré mais sans configuration)
+- [x] Configurer les règles d'alerting dans Alertmanager (voir section [Alerting](#alerting-avec-prometheus--alertmanager))
 - [ ] Ajouter un healthcheck sur le service `app` dans `docker-compose.yml` pour que Prometheus ne démarre qu'une fois Spring Boot prêt
 - [ ] Persister les données InfluxDB avec un volume Docker

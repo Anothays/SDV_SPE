@@ -1,0 +1,49 @@
+groups:
+  - name: mademo-alerts
+    rules:
+      # L'app ne répond plus au scrape (crash, réseau, déploiement raté)
+      - alert: AppDown
+        expr: up{job="spring-boot-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application injoignable"
+          description: "La cible {{ $labels.instance }} ne répond plus au scrape Prometheus depuis 1 minute."
+
+      # Plus de 1% des requêtes HTTP en erreur 5xx sur les 5 dernières minutes
+      - alert: HighErrorRate
+        expr: >
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count[5m])) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taux d'erreurs 5xx élevé"
+          description: "{{ $value | humanizePercentage }} des requêtes HTTP échouent en 5xx (seuil : 1%)."
+
+      # p99 de latence HTTP au-dessus de 1 seconde
+      # (nécessite management.metrics.distribution.percentiles-histogram.http.server.requests=true)
+      - alert: HighLatencyP99
+        expr: >
+          histogram_quantile(0.99,
+            sum by (le) (rate(http_server_requests_seconds_bucket[5m]))
+          ) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latence HTTP p99 dégradée"
+          description: "Le p99 des requêtes HTTP est à {{ $value | humanizeDuration }} (seuil : 1s)."
+
+      # Les consommateurs Kafka n'arrivent plus à suivre le rythme de publication
+      - alert: KafkaConsumerLagHigh
+        expr: sum(kafka_consumer_fetch_manager_records_lag) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consumer lag Kafka élevé"
+          description: "{{ $value }} messages en retard sur les topics (seuil : 100 pendant 5 min)."

@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: "app"
     build: .
     ports:
       - "8080:8080"
@@ -22,6 +23,7 @@ services:
 
   db:
     image: mysql:8.0
+    container_name: "db"
     environment:
       MYSQL_DATABASE: maBase
       MYSQL_USER: devuser
@@ -39,10 +41,12 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    container_name: "prometheus"
     ports:
       - "9090:9090"
     volumes:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus_data:/prometheus
     depends_on:
       - app
@@ -51,6 +55,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    container_name: "grafana"
     ports:
       - "3000:3000"
     environment:
@@ -65,13 +70,18 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
+    container_name: "alertManager"
     ports:
       - "9093:9093"
+    volumes:
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./config/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
     networks:
       - monitoring-net
 
   influxdb:
     image: influxdb:1.8
+    container_name: "influxDb"
     ports:
       - "8086:8086"
     environment:
@@ -82,6 +92,7 @@ services:
 
   kafka:
     image: apache/kafka:3.9.0
+    container_name: "kafka"
     ports:
       - "9094:9094"
     environment:
@@ -106,6 +117,7 @@ services:
 
   akhq:
     image: tchiotludo/akhq:latest
+    container_name: "akhq"
     ports:
       - "8081:8080"
     environment:
@@ -123,6 +135,7 @@ services:
 
   jmeter:
     platform: linux/amd64
+    container_name: "jmeter"
     image: justb4/jmeter:latest
     entrypoint: [ "/bin/sh", "/scripts/run-test.sh" ]
     environment:

@@ -1,6 +1,7 @@
 package com.example.kafka;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -8,13 +9,26 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 class KafkaTopicConfig {
 
-    public static final String PROFIL_CREATED_TOPIC = "profil-created";
+    public static final String PROFIL_CREATED_TOPIC = "players.profil.created";
+    public static final String TELEMETRY_PLAYER_ACTION_TOPIC = "telemetry.player.action";
 
+    // Fait métier : volume modéré, chaque message compte
     @Bean
     public NewTopic profilCreatedTopic() {
         return TopicBuilder.name(PROFIL_CREATED_TOPIC)
                 .partitions(1)
                 .replicas(1)
+                .build();
+    }
+
+    // Télémétrie : fort volume, valeur individuelle faible.
+    // 6 partitions (parallélisme des consommateurs), rétention courte 24h.
+    @Bean
+    public NewTopic telemetryPlayerActionTopic() {
+        return TopicBuilder.name(TELEMETRY_PLAYER_ACTION_TOPIC)
+                .partitions(6)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(24 * 60 * 60 * 1000L))
                 .build();
     }
 }

@@ -1,0 +1,17 @@
+route:
+  receiver: discord
+  # Alertes regroupées par nom : 50 instances de la même alerte = 1 notification
+  group_by: ['alertname']
+  # Attente avant la 1re notification d'un groupe (laisse le temps aux alertes liées d'arriver)
+  group_wait: 10s
+  # Délai avant de notifier de nouvelles alertes dans un groupe déjà notifié
+  group_interval: 1m
+  # Rappel si l'alerte est toujours active
+  repeat_interval: 30m
+
+receivers:
+  - name: discord
+    discord_configs:
+      # URL du webhook lue depuis un fichier monté (jamais versionnée)
+      - webhook_url_file: /etc/alertmanager/discord_webhook_url
+        send_resolved: true

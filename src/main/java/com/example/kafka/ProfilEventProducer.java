@@ -27,9 +27,9 @@ public class ProfilEventProducer {
         kafkaTemplate.send(KafkaTopicConfig.PROFIL_CREATED_TOPIC, String.valueOf(profil.getId()), profil)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
-                        log.error("Échec de publication de l'événement profil-created pour id={}", profil.getId(), ex);
+                        log.error("Échec de publication de l'événement players.profil.created pour id={}", profil.getId(), ex);
                     } else {
-                        log.info("Événement profil-created publié : id={}, partition={}, offset={}",
+                        log.info("Événement players.profil.created publié : id={}, partition={}, offset={}",
                                 profil.getId(),
                                 result.getRecordMetadata().partition(),
                                 result.getRecordMetadata().offset());
