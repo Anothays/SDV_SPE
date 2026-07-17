@@ -1,7 +1,7 @@
 services:
   app:
     container_name: "app"
-    build: .
+    build: ./profil-service
     ports:
       - "8080:8080"
     environment:
@@ -45,8 +45,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./config/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./monitoring-service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring-service/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus_data:/prometheus
     depends_on:
       - app
@@ -61,8 +61,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - ./config/grafana/provisioning:/etc/grafana/provisioning
-      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring-service/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring-service/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
     networks:
@@ -74,8 +74,8 @@ services:
     ports:
       - "9093:9093"
     volumes:
-      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./config/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
+      - ./monitoring-service/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./monitoring-service/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
     networks:
       - monitoring-net
 
@@ -141,10 +141,10 @@ services:
     environment:
       TEST_PLAN: ${TEST_PLAN:-profil-api-load-test.jmx}
     volumes:
-      - ./config/jmeter/run-test.sh:/scripts/run-test.sh:ro
-      - ./config/jmeter/test-plans:/test-plans
-      - ./config/jmeter/results:/results
-      - ./config/jmeter/reports:/reports
+      - ./load-testing/jmeter/run-test.sh:/scripts/run-test.sh:ro
+      - ./load-testing/jmeter/test-plans:/test-plans
+      - ./load-testing/jmeter/results:/results
+      - ./load-testing/jmeter/reports:/reports
     depends_on:
       - app
       - influxdb

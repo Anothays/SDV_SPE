@@ -15,8 +15,8 @@ on:
     branches:
       - main
     paths:
-      - 'src/**'
-      - 'jmeter/test-plans/**'
+      - 'profil-service/src/**'
+      - 'load-testing/jmeter/test-plans/**'
 
 jobs:
   performance-tests:
@@ -65,7 +65,7 @@ jobs:
         if: always()
         with:
           name: jmeter-jtl-${{ github.run_number }}
-          path: jmeter/results/*.jtl
+          path: load-testing/jmeter/results/*.jtl
           retention-days: 30
 
       - name: Upload HTML report
@@ -73,13 +73,13 @@ jobs:
         if: always()
         with:
           name: jmeter-report-${{ github.run_number }}
-          path: jmeter/reports/
+          path: load-testing/jmeter/reports/
           retention-days: 30
 
       - name: Check error rate threshold
         run: |
           TEST_PLAN="${{ github.event.inputs.test_plan || 'profil-api-load-test' }}"
-          JTL_FILE="jmeter/results/${TEST_PLAN}-result.jtl"
+          JTL_FILE="load-testing/jmeter/results/${TEST_PLAN}-result.jtl"
           if [ -f "$JTL_FILE" ]; then
             TOTAL=$(tail -n +2 "$JTL_FILE" | wc -l)
             ERRORS=$(tail -n +2 "$JTL_FILE" | awk -F',' '{if($8=="false") count++} END {print count+0}')

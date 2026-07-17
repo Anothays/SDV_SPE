@@ -219,7 +219,7 @@ Implémenté dans MaDemo, généralisable tel quel à chaque service :
 - **Métriques clés suivies** : latence p95/p99 et taux d'erreur HTTP par endpoint, consumer lag par groupe, erreurs de publication Kafka, saturation du pool de connexions, mémoire/GC.
 - **Métriques métier** (à ajouter) : compteurs Micrometer (`profils.created.total`, `matches.found.total`, `transactions.amount.sum`) — le fonctionnel devient observable dans les mêmes dashboards.
 - **Logs** : logs techniques structurés (JSON) avec `correlationId` propagé jusqu'aux consommateurs Kafka — une action se suit de la requête HTTP à ses effets asynchrones. Logs fonctionnels = événements Kafka eux-mêmes (piste d'audit).
-- **Alertes** (implémentées dans MaDemo : `config/prometheus/alert-rules.yml`, notifications Discord via Alertmanager) : cible de scrape down (1 min), taux d'erreur 5xx > 1 %, p99 > 1 s, consumer lag Kafka > 100 messages. Chaque règle porte un `for:` qui filtre les pics isolés — on alerte sur les problèmes soutenus, pas sur les blips.
+- **Alertes** (implémentées dans MaDemo : `monitoring-service/prometheus/alert-rules.yml`, notifications Discord via Alertmanager) : cible de scrape down (1 min), taux d'erreur 5xx > 1 %, p99 > 1 s, consumer lag Kafka > 100 messages. Chaque règle porte un `for:` qui filtre les pics isolés — on alerte sur les problèmes soutenus, pas sur les blips.
 
 ---
 

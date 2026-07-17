@@ -21,7 +21,7 @@ API REST Spring Boot avec une stack de monitoring complète : Prometheus, Grafan
 
 ## Base de données MySQL
 
-L'application se connecte à une base MySQL 8 dont les credentials sont définis dans `src/main/resources/application.properties` :
+L'application se connecte à une base MySQL 8 dont les credentials sont définis dans `profil-service/src/main/resources/application.properties` :
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/maBase
@@ -76,7 +76,7 @@ Grafana se connecte à Prometheus pour visualiser les métriques en temps réel.
 
 **Division du travail** : Prometheus détecte (évalue les règles PromQL), Alertmanager notifie (déduplique, groupe, route vers Discord).
 
-### Règles d'alerte (`config/prometheus/alert-rules.yml`)
+### Règles d'alerte (`monitoring-service/prometheus/alert-rules.yml`)
 
 | Alerte | Condition | Durée | Sévérité |
 |--------|-----------|-------|----------|
@@ -89,7 +89,7 @@ Le calcul du p99 nécessite les buckets d'histogramme, activés dans `applicatio
 
 ### Notifications Discord
 
-Alertmanager route toutes les alertes vers un webhook Discord (`config/alertmanager/alertmanager.yml`). L'URL du webhook est lue depuis `config/alertmanager/discord_webhook_url` — fichier **gitignoré** (secret), monté dans le container. La résolution d'une alerte est aussi notifiée (`send_resolved`).
+Alertmanager route toutes les alertes vers un webhook Discord (`monitoring-service/alertmanager/alertmanager.yml`). L'URL du webhook est lue depuis `monitoring-service/alertmanager/discord_webhook_url` — fichier **gitignoré** (secret), monté dans le container. La résolution d'une alerte est aussi notifiée (`send_resolved`).
 
 ### Tester la chaîne
 
@@ -180,20 +180,20 @@ Les volumes permettent de persister des données ou d'injecter de la configurati
 
 > **Note** : les données MySQL ne sont volontairement **pas persistées** (pas de volume sur `/var/lib/mysql`) — chaque `docker compose down` repart d'une base vide, ce qui garantit des tests reproductibles.
 
-#### `./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml`
+#### `./monitoring-service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml`
 Injecte la configuration de scraping dans Prometheus. Permet de modifier les cibles sans reconstruire l'image.
 
 #### `prometheus_data:/prometheus`
 Volume Docker nommé qui persiste la base de données time-series de Prometheus entre les redémarrages.
 
-#### `./config/grafana/provisioning:/etc/grafana/provisioning`
+#### `./monitoring-service/grafana/provisioning:/etc/grafana/provisioning`
 Permet à Grafana de **charger automatiquement** les datasources et les dashboards au démarrage, sans action manuelle dans l'UI.
 
 Ce dossier contient deux sous-dossiers :
 - `datasources/` — fichiers YAML déclarant les sources de données (Prometheus, InfluxDB)
 - `dashboards/` — fichier YAML indiquant à Grafana où trouver les fichiers JSON des dashboards
 
-#### `./config/grafana/dashboards:/var/lib/grafana/dashboards`
+#### `./monitoring-service/grafana/dashboards:/var/lib/grafana/dashboards`
 Contient les fichiers JSON des dashboards Grafana. Tout fichier `.json` déposé ici est automatiquement importé au démarrage via le provisioning. Cela permet de **versionner les dashboards dans Git** et de les déployer sans intervention manuelle.
 
 Dashboards disponibles :
@@ -203,10 +203,10 @@ Dashboards disponibles :
 - `kafka-client-metrics.json` — métriques client Kafka (producteur/consommateur) de l'application
 
 #### Volumes JMeter
-- `./config/jmeter/run-test.sh:/scripts/run-test.sh` — script d'exécution des tests (versionné)
-- `./config/jmeter/test-plans:/test-plans` — plans de test `.jmx`
-- `./config/jmeter/results:/results` — fichiers de résultats `.jtl`
-- `./config/jmeter/reports:/reports` — rapports HTML générés après chaque test
+- `./load-testing/jmeter/run-test.sh:/scripts/run-test.sh` — script d'exécution des tests (versionné)
+- `./load-testing/jmeter/test-plans:/test-plans` — plans de test `.jmx`
+- `./load-testing/jmeter/results:/results` — fichiers de résultats `.jtl`
+- `./load-testing/jmeter/reports:/reports` — rapports HTML générés après chaque test
 
 ---
 
@@ -254,7 +254,7 @@ Bombarde l'endpoint d'ingestion `POST /api/telemetry` (fire-and-forget vers Kafk
 
 ### Lancer les tests
 
-La logique d'exécution est dans `config/jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `profil-api-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
+La logique d'exécution est dans `load-testing/jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `profil-api-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
 
 ```bash
 # Via le Makefile (recommandé)

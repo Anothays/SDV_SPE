@@ -34,10 +34,8 @@ build/
 
 data
 
-jmeter/results
-jmeter/reports
-config/jmeter/results
-config/jmeter/reports
+load-testing/jmeter/results
+load-testing/jmeter/reports
 
 # Secret : webhook Discord d'Alertmanager
-config/alertmanager/discord_webhook_url
+monitoring-service/alertmanager/discord_webhook_url
