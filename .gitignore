@@ -34,8 +34,10 @@ build/
 
 data
 
-load-testing/jmeter/results
-load-testing/jmeter/reports
+service-load-testing/jmeter/results
+service-load-testing/jmeter/reports
 
 # Secret : webhook Discord d'Alertmanager
-monitoring-service/alertmanager/discord_webhook_url
+service-monitoring/alertmanager/discord_webhook_url
+
+.superpowers/
