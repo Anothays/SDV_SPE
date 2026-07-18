@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nebula.identite.auth.dto.AuthResponse;
 import com.nebula.identite.auth.dto.LoginRequest;
 import com.nebula.identite.auth.dto.RegisterRequest;
+import com.nebula.identite.kafka.PlayerRegisteredEvent;
+import com.nebula.identite.kafka.PlayerRegisteredProducer;
 
 @Service
 public class AuthService {
@@ -14,11 +16,14 @@ public class AuthService {
     private final AccountDao accountDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final PlayerRegisteredProducer playerRegisteredProducer;
 
-    public AuthService(AccountDao accountDao, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(AccountDao accountDao, PasswordEncoder passwordEncoder,
+            JwtService jwtService, PlayerRegisteredProducer playerRegisteredProducer) {
         this.accountDao = accountDao;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.playerRegisteredProducer = playerRegisteredProducer;
     }
 
     @Transactional
@@ -33,6 +38,7 @@ public class AuthService {
         account.setRole("PLAYER");
         account.setRegion(request.region());
         Account saved = accountDao.save(account);
+        playerRegisteredProducer.publish(PlayerRegisteredEvent.from(saved));
         return new AuthResponse(saved.getId(),
                 jwtService.issue(saved.getId(), saved.getUsername(), saved.getRole()));
     }

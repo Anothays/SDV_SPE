@@ -17,11 +17,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.nebula.identite.auth.dto.AuthResponse;
 import com.nebula.identite.auth.dto.LoginRequest;
 import com.nebula.identite.auth.dto.RegisterRequest;
+import com.nebula.identite.kafka.PlayerRegisteredEvent;
+import com.nebula.identite.kafka.PlayerRegisteredProducer;
 
 class AuthServiceTest {
 
     private AccountDao accountDao;
     private JwtService jwtService;
+    private PlayerRegisteredProducer producer;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private AuthService authService;
 
@@ -29,8 +32,9 @@ class AuthServiceTest {
     void setUp() {
         accountDao = mock(AccountDao.class);
         jwtService = mock(JwtService.class);
+        producer = mock(PlayerRegisteredProducer.class);
         when(jwtService.issue(any(), any(), any())).thenReturn("jwt-token");
-        authService = new AuthService(accountDao, passwordEncoder, jwtService);
+        authService = new AuthService(accountDao, passwordEncoder, jwtService, producer);
     }
 
     @Test
@@ -91,5 +95,23 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("alice", "wrong")))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void registerPublishesPlayerRegisteredEvent() {
+        when(accountDao.existsByUsername("alice")).thenReturn(false);
+        when(accountDao.existsByEmail("alice@example.com")).thenReturn(false);
+        when(accountDao.save(any(Account.class))).thenAnswer(inv -> {
+            Account a = inv.getArgument(0);
+            a.setId("uuid-1");
+            return a;
+        });
+
+        authService.register(new RegisterRequest("alice", "alice@example.com", "password123", "EU"));
+
+        ArgumentCaptor<PlayerRegisteredEvent> captor = ArgumentCaptor.forClass(PlayerRegisteredEvent.class);
+        org.mockito.Mockito.verify(producer).publish(captor.capture());
+        assertThat(captor.getValue().playerId()).isEqualTo("uuid-1");
+        assertThat(captor.getValue().username()).isEqualTo("alice");
     }
 }
