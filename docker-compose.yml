@@ -45,8 +45,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring-service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./monitoring-service/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./service-monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./service-monitoring/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus_data:/prometheus
     depends_on:
       - app
@@ -61,8 +61,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - ./monitoring-service/grafana/provisioning:/etc/grafana/provisioning
-      - ./monitoring-service/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./service-monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./service-monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
     networks:
@@ -74,8 +74,8 @@ services:
     ports:
       - "9093:9093"
     volumes:
-      - ./monitoring-service/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./monitoring-service/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
+      - ./service-monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./service-monitoring/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
     networks:
       - monitoring-net
 
@@ -141,10 +141,10 @@ services:
     environment:
       TEST_PLAN: ${TEST_PLAN:-profil-api-load-test.jmx}
     volumes:
-      - ./load-testing/jmeter/run-test.sh:/scripts/run-test.sh:ro
-      - ./load-testing/jmeter/test-plans:/test-plans
-      - ./load-testing/jmeter/results:/results
-      - ./load-testing/jmeter/reports:/reports
+      - ./service-load-testing/jmeter/run-test.sh:/scripts/run-test.sh:ro
+      - ./service-load-testing/jmeter/test-plans:/test-plans
+      - ./service-load-testing/jmeter/results:/results
+      - ./service-load-testing/jmeter/reports:/reports
     depends_on:
       - app
       - influxdb
