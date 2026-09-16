@@ -14,6 +14,7 @@ public class ProfilEventConsumer {
 
     @KafkaListener(topics = KafkaTopicConfig.PROFIL_CREATED_TOPIC, groupId = "mademo")
     public void onProfilCreated(ProfilDto profil) {
-        log.info("Événement players.profil.created reçu : id={}, name={}", profil.getId(), profil.getName());
+        log.info("Événement players.profil.created reçu : playerId={}, username={}",
+                profil.getPlayerId(), profil.getUsername());
     }
 }

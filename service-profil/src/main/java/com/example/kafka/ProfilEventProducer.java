@@ -24,13 +24,14 @@ public class ProfilEventProducer {
      * la requête HTTP, l'erreur est seulement journalisée.
      */
     public void publishProfilCreated(ProfilDto profil) {
-        kafkaTemplate.send(KafkaTopicConfig.PROFIL_CREATED_TOPIC, String.valueOf(profil.getId()), profil)
+        kafkaTemplate.send(KafkaTopicConfig.PROFIL_CREATED_TOPIC, profil.getPlayerId(), profil)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
-                        log.error("Échec de publication de l'événement players.profil.created pour id={}", profil.getId(), ex);
+                        log.error("Échec de publication de l'événement players.profil.created pour playerId={}",
+                                profil.getPlayerId(), ex);
                     } else {
-                        log.info("Événement players.profil.created publié : id={}, partition={}, offset={}",
-                                profil.getId(),
+                        log.info("Événement players.profil.created publié : playerId={}, partition={}, offset={}",
+                                profil.getPlayerId(),
                                 result.getRecordMetadata().partition(),
                                 result.getRecordMetadata().offset());
                     }
