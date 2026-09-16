@@ -12,6 +12,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.util.backoff.ExponentialBackOff;
 
@@ -31,8 +32,14 @@ public class KafkaConsumerConfig {
                     KafkaProperties kafkaProperties,
                     KafkaTemplate<String, Object> kafkaTemplate) {
         Map<String, Object> props = kafkaProperties.buildConsumerProperties(null);
-        JsonDeserializer<PlayerRegisteredEvent> valueDeserializer =
+        JsonDeserializer<PlayerRegisteredEvent> jsonDeserializer =
                 new JsonDeserializer<>(PlayerRegisteredEvent.class, false);
+        // Sans ce wrapper, une erreur de désérialisation (message corrompu, contrat
+        // producteur cassé...) survient dans poll() avant que le container ait une
+        // chance d'agir : la partition reste bloquée pour toujours sur le même
+        // message au lieu de suivre le circuit retry+DLT ci-dessous.
+        ErrorHandlingDeserializer<PlayerRegisteredEvent> valueDeserializer =
+                new ErrorHandlingDeserializer<>(jsonDeserializer);
 
         var factory = new ConcurrentKafkaListenerContainerFactory<String, PlayerRegisteredEvent>();
         factory.setConsumerFactory(new DefaultKafkaConsumerFactory<>(
