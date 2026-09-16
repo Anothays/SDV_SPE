@@ -335,3 +335,14 @@ Autres cibles : `make setup`, `make down`, `make logs`, `make help`.
 - [x] Configurer les règles d'alerting dans Alertmanager (voir section [Alerting](#alerting-avec-prometheus--alertmanager))
 - [ ] Ajouter un healthcheck sur le service `app` dans `docker-compose.yml` pour que Prometheus ne démarre qu'une fois Spring Boot prêt
 - [ ] Persister les données InfluxDB avec un volume Docker
+
+---
+
+## Flux inscription (plan 1)
+
+Inscription → `players.registered` → création du profil en réaction (chorégraphie,
+aucun appel HTTP inter-services). Détails : `docs/superpowers/specs/2026-07-18-nebula-architecture-design.md`.
+
+- Service Identité : http://localhost:8082 (`POST /auth/register`, `POST /auth/login`)
+- Service Profil : http://localhost:8080 (`GET/PUT /api/profils/{playerId}`)
+- Démo rapide : voir `docs/superpowers/plans/2026-07-18-plan-1-socle-flux-inscription.md`, Task 12.
