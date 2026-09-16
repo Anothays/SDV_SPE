@@ -20,17 +20,17 @@ public class OutboxCleanupJob {
     private static final Logger log = LoggerFactory.getLogger(OutboxCleanupJob.class);
     private static final int RETENTION_DAYS = 7;
 
-    private final OutboxEventDao outboxEventDao;
+    private final OutboxEventRepository outboxEventRepository;
 
-    public OutboxCleanupJob(OutboxEventDao outboxEventDao) {
-        this.outboxEventDao = outboxEventDao;
+    public OutboxCleanupJob(OutboxEventRepository outboxEventRepository) {
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Transactional
     @Scheduled(cron = "0 0 3 * * *")
     public void purgeOldEvents() {
         Instant cutoff = Instant.now().minus(RETENTION_DAYS, ChronoUnit.DAYS);
-        long deleted = outboxEventDao.deleteByTimestampBefore(cutoff);
+        long deleted = outboxEventRepository.deleteByTimestampBefore(cutoff);
         if (deleted > 0) {
             log.info("Purge outbox : {} événement(s) de plus de {} jours supprimé(s)", deleted, RETENTION_DAYS);
         }

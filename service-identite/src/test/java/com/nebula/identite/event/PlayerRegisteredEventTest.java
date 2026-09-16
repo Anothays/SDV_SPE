@@ -1,4 +1,4 @@
-package com.nebula.identite.kafka;
+package com.nebula.identite.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,7 +6,7 @@ import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
-import com.nebula.identite.auth.Account;
+import com.nebula.identite.entity.Account;
 
 class PlayerRegisteredEventTest {
 

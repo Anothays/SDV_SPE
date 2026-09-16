@@ -1,4 +1,4 @@
-package com.nebula.identite.auth.dto;
+package com.nebula.identite.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

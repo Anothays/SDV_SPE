@@ -1,4 +1,4 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.controller;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyString;

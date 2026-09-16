@@ -1,4 +1,4 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.exception;
 
 public class InvalidCredentialsException extends RuntimeException {
 

@@ -1,4 +1,4 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -6,36 +6,40 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nebula.identite.auth.dto.AuthResponse;
-import com.nebula.identite.auth.dto.LoginRequest;
-import com.nebula.identite.auth.dto.RegisterRequest;
-import com.nebula.identite.kafka.PlayerRegisteredEvent;
+import com.nebula.identite.dto.AuthResponse;
+import com.nebula.identite.dto.LoginRequest;
+import com.nebula.identite.dto.RegisterRequest;
+import com.nebula.identite.entity.Account;
+import com.nebula.identite.event.PlayerRegisteredEvent;
+import com.nebula.identite.exception.DuplicateAccountException;
+import com.nebula.identite.exception.InvalidCredentialsException;
 import com.nebula.identite.outbox.OutboxEvent;
-import com.nebula.identite.outbox.OutboxEventDao;
+import com.nebula.identite.outbox.OutboxEventRepository;
+import com.nebula.identite.repository.AccountRepository;
 
 @Service
 public class AuthService {
 
     private static final String PLAYERS_REGISTERED_TOPIC = "players.registered";
 
-    private final AccountDao accountDao;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final OutboxEventDao outboxEventDao;
+    private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
 
-    public AuthService(AccountDao accountDao, PasswordEncoder passwordEncoder,
-            JwtService jwtService, OutboxEventDao outboxEventDao, ObjectMapper objectMapper) {
-        this.accountDao = accountDao;
+    public AuthService(AccountRepository accountRepository, PasswordEncoder passwordEncoder,
+            JwtService jwtService, OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper) {
+        this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
-        this.outboxEventDao = outboxEventDao;
+        this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (accountDao.existsByUsername(request.username()) || accountDao.existsByEmail(request.email())) {
+        if (accountRepository.existsByUsername(request.username()) || accountRepository.existsByEmail(request.email())) {
             throw new DuplicateAccountException();
         }
         Account account = new Account();
@@ -44,12 +48,12 @@ public class AuthService {
         account.setPasswordHash(passwordEncoder.encode(request.password()));
         account.setRole("PLAYER");
         account.setRegion(request.region());
-        Account saved = accountDao.save(account);
+        Account saved = accountRepository.save(account);
 
         // Outbox pattern : l'événement est inséré dans la même transaction que le
         // compte, Debezium (CDC sur le WAL Postgres) le publie ensuite vers Kafka.
         // Atomicité garantie, plus de dual-write (spec §11).
-        outboxEventDao.save(OutboxEvent.of(
+        outboxEventRepository.save(OutboxEvent.of(
                 PLAYERS_REGISTERED_TOPIC,
                 saved.getId(),
                 "PlayerRegistered",
@@ -60,7 +64,7 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        Account account = accountDao.findByUsername(request.username())
+        Account account = accountRepository.findByUsername(request.username())
                 .filter(a -> passwordEncoder.matches(request.password(), a.getPasswordHash()))
                 .orElseThrow(InvalidCredentialsException::new);
         return new AuthResponse(account.getId(),

@@ -1,4 +1,4 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

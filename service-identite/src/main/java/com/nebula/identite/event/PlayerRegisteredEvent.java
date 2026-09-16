@@ -1,9 +1,9 @@
-package com.nebula.identite.kafka;
+package com.nebula.identite.event;
 
 import java.time.Instant;
 import java.util.UUID;
 
-import com.nebula.identite.auth.Account;
+import com.nebula.identite.entity.Account;
 
 /**
  * Contrat players.registered v1 (spec §4).

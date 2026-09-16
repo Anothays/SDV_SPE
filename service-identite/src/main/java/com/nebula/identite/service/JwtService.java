@@ -1,4 +1,4 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.service;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.time.Duration;

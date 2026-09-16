@@ -1,10 +1,12 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AccountDao extends JpaRepository<Account, String> {
+import com.nebula.identite.entity.Account;
+
+public interface AccountRepository extends JpaRepository<Account, String> {
 
     boolean existsByUsername(String username);
 

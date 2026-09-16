@@ -1,4 +1,4 @@
-package com.nebula.identite.auth;
+package com.nebula.identite.entity;
 
 import java.time.Instant;
 import java.util.UUID;
