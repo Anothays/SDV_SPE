@@ -11,6 +11,8 @@ class KafkaTopicConfig {
 
     public static final String PROFIL_CREATED_TOPIC = "players.profil.created";
     public static final String TELEMETRY_PLAYER_ACTION_TOPIC = "telemetry.player.action";
+    // Topic possédé par service-identite : pas de bean NewTopic ici, seulement la constante.
+    public static final String PLAYERS_REGISTERED_TOPIC = "players.registered";
 
     // Fait métier : volume modéré, chaque message compte
     @Bean
