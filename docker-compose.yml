@@ -21,6 +21,43 @@ services:
       - monitoring-net
     restart: on-failure
 
+  db-identite:
+    image: postgres:16-alpine
+    container_name: "db-identite"
+    environment:
+      POSTGRES_DB: identite
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d identite"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - monitoring-net
+
+  identite:
+    container_name: "identite"
+    build: service-identite
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-identite:5432/identite
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: devpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: prometheus,health,info
+    depends_on:
+      db-identite:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+    restart: on-failure
+
   db:
     image: mysql:8.0
     container_name: "db"
