@@ -24,6 +24,9 @@ services:
   db-identite:
     image: postgres:16-alpine
     container_name: "db-identite"
+    # wal_level=logical : requis par le connecteur Debezium (réplication logique
+    # via le plugin pgoutput, natif depuis PG10, pas d'extension à installer).
+    command: ["postgres", "-c", "wal_level=logical"]
     environment:
       POSTGRES_DB: identite
       POSTGRES_USER: devuser
@@ -61,6 +64,8 @@ services:
   db:
     image: mysql:8.0
     container_name: "db"
+    # Binlog au format ROW : requis par le connecteur Debezium MySQL (CDC).
+    command: ["--log-bin=mysql-bin", "--binlog-format=ROW", "--server-id=184054", "--binlog-row-image=FULL"]
     environment:
       MYSQL_DATABASE: maBase
       MYSQL_USER: devuser
@@ -68,6 +73,8 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
     ports:
       - "3306:3306"
+    volumes:
+      - ./service-messaging/mysql-init/grant-replication.sql:/docker-entrypoint-initdb.d/grant-replication.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "devuser", "-pdevpassword"]
       interval: 10s
@@ -149,6 +156,45 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+    networks:
+      - monitoring-net
+
+  kafka-connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: "kafka-connect"
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: outbox-connect
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      STATUS_STORAGE_REPLICATION_FACTOR: "1"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      db-identite:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+
+  # Enregistre les connecteurs outbox (identite, profil) au démarrage — même
+  # esprit que le provisioning automatique de Grafana : `docker compose up`
+  # suffit, aucune étape manuelle.
+  kafka-connect-init:
+    image: curlimages/curl:latest
+    container_name: "kafka-connect-init"
+    entrypoint: ["/bin/sh", "/scripts/register-connectors.sh"]
+    volumes:
+      - ./service-messaging/debezium:/connectors:ro
+      - ./service-messaging/debezium/register-connectors.sh:/scripts/register-connectors.sh:ro
+    depends_on:
+      - kafka-connect
     networks:
       - monitoring-net
 
