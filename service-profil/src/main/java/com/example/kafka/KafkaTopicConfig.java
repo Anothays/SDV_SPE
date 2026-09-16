@@ -13,6 +13,7 @@ class KafkaTopicConfig {
     public static final String TELEMETRY_PLAYER_ACTION_TOPIC = "telemetry.player.action";
     // Topic possédé par service-identite : pas de bean NewTopic ici, seulement la constante.
     public static final String PLAYERS_REGISTERED_TOPIC = "players.registered";
+    public static final String PLAYERS_REGISTERED_DLT_TOPIC = "players.registered.dlt";
 
     // Fait métier : volume modéré, chaque message compte
     @Bean
@@ -31,6 +32,16 @@ class KafkaTopicConfig {
                 .partitions(6)
                 .replicas(1)
                 .config(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(24 * 60 * 60 * 1000L))
+                .build();
+    }
+
+    // Dead letter : faible volume, rétention longue pour investigation (spec §4)
+    @Bean
+    public NewTopic playersRegisteredDltTopic() {
+        return TopicBuilder.name(PLAYERS_REGISTERED_DLT_TOPIC)
+                .partitions(1)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(14 * 24 * 60 * 60 * 1000L))
                 .build();
     }
 }

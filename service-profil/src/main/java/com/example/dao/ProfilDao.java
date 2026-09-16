@@ -29,10 +29,16 @@ public class ProfilDao {
     }
 
     public Optional<Profil> findByPlayerId(String playerId) {
+        // getResultList() (et non getResultStream()) : ce DAO est appelé hors
+        // transaction (ex. lecture depuis un autre thread) — un stream JPA a
+        // besoin d'une connexion ouverte pendant toute sa consommation, une
+        // liste est matérialisée immédiatement.
         return entityManager
                 .createQuery("SELECT p FROM Profil p WHERE p.playerId = :playerId", Profil.class)
                 .setParameter("playerId", playerId)
-                .getResultStream()
+                .setMaxResults(1)
+                .getResultList()
+                .stream()
                 .findFirst();
     }
 
