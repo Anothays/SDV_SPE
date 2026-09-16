@@ -14,27 +14,29 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nebula.identite.auth.dto.AuthResponse;
 import com.nebula.identite.auth.dto.LoginRequest;
 import com.nebula.identite.auth.dto.RegisterRequest;
-import com.nebula.identite.kafka.PlayerRegisteredEvent;
-import com.nebula.identite.kafka.PlayerRegisteredProducer;
+import com.nebula.identite.outbox.OutboxEvent;
+import com.nebula.identite.outbox.OutboxEventDao;
 
 class AuthServiceTest {
 
     private AccountDao accountDao;
     private JwtService jwtService;
-    private PlayerRegisteredProducer producer;
+    private OutboxEventDao outboxEventDao;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
         accountDao = mock(AccountDao.class);
         jwtService = mock(JwtService.class);
-        producer = mock(PlayerRegisteredProducer.class);
+        outboxEventDao = mock(OutboxEventDao.class);
         when(jwtService.issue(any(), any(), any())).thenReturn("jwt-token");
-        authService = new AuthService(accountDao, passwordEncoder, jwtService, producer);
+        authService = new AuthService(accountDao, passwordEncoder, jwtService, outboxEventDao, objectMapper);
     }
 
     @Test
@@ -98,7 +100,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerPublishesPlayerRegisteredEvent() {
+    void registerWritesPlayerRegisteredEventToOutbox() {
         when(accountDao.existsByUsername("alice")).thenReturn(false);
         when(accountDao.existsByEmail("alice@example.com")).thenReturn(false);
         when(accountDao.save(any(Account.class))).thenAnswer(inv -> {
@@ -109,9 +111,16 @@ class AuthServiceTest {
 
         authService.register(new RegisterRequest("alice", "alice@example.com", "password123", "EU"));
 
-        ArgumentCaptor<PlayerRegisteredEvent> captor = ArgumentCaptor.forClass(PlayerRegisteredEvent.class);
-        org.mockito.Mockito.verify(producer).publish(captor.capture());
-        assertThat(captor.getValue().playerId()).isEqualTo("uuid-1");
-        assertThat(captor.getValue().username()).isEqualTo("alice");
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        org.mockito.Mockito.verify(outboxEventDao).save(captor.capture());
+        OutboxEvent event = captor.getValue();
+        // topic = aggregatetype, clé Kafka = aggregateid (playerId) : contrat du
+        // connecteur Debezium EventRouter, ne pas renommer sans mettre à jour la
+        // config du connecteur (service-messaging/debezium/identite-outbox-connector.json)
+        assertThat(event.getAggregatetype()).isEqualTo("players.registered");
+        assertThat(event.getAggregateid()).isEqualTo("uuid-1");
+        assertThat(event.getPayload()).contains("\"playerId\":\"uuid-1\"", "\"username\":\"alice\"");
+        // Jamais de PII (email) dans l'événement publié
+        assertThat(event.getPayload()).doesNotContain("alice@example.com");
     }
 }
