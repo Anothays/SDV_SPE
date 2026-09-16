@@ -1,12 +1,17 @@
 package com.example.controller;
 
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.dto.ProfilDto;
+import com.example.dto.UpdateProfilRequest;
 import com.example.service.ProfilService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/profils")
@@ -18,9 +23,17 @@ public class ProfilController {
         this.profilService = profilService;
     }
 
-    @PostMapping
-    public ProfilDto create(@RequestBody ProfilDto profilDto) {
-        return profilService.saveProfil(profilDto);
+    // La création n'est plus exposée : un profil naît par événement
+    // players.registered (spec §5), jamais par POST direct.
+
+    @GetMapping("/{playerId}")
+    public ProfilDto get(@PathVariable String playerId) {
+        return profilService.findByPlayerId(playerId);
+    }
+
+    @PutMapping("/{playerId}")
+    public ProfilDto update(@PathVariable String playerId,
+            @Valid @RequestBody UpdateProfilRequest request) {
+        return profilService.updateRegion(playerId, request.region());
     }
 }
-

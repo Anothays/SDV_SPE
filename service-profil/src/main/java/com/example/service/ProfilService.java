@@ -5,23 +5,30 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.dao.ProfilDao;
 import com.example.dto.ProfilDto;
-import com.example.kafka.ProfilEventProducer;
+import com.example.entity.Profil;
+import com.example.util.DtoEntityUtil;
 
 @Service
 public class ProfilService {
 
     private final ProfilDao profilDao;
-    private final ProfilEventProducer profilEventProducer;
 
-    public ProfilService(ProfilDao profilDao, ProfilEventProducer profilEventProducer) {
+    public ProfilService(ProfilDao profilDao) {
         this.profilDao = profilDao;
-        this.profilEventProducer = profilEventProducer;
+    }
+
+    @Transactional(readOnly = true)
+    public ProfilDto findByPlayerId(String playerId) {
+        return profilDao.findByPlayerId(playerId)
+                .map(DtoEntityUtil::profilToProfilDto)
+                .orElseThrow(() -> new ProfilNotFoundException(playerId));
     }
 
     @Transactional
-    public ProfilDto saveProfil(ProfilDto profilDto) {
-        ProfilDto saved = profilDao.save(profilDto);
-        profilEventProducer.publishProfilCreated(saved);
-        return saved;
+    public ProfilDto updateRegion(String playerId, String region) {
+        Profil profil = profilDao.findByPlayerId(playerId)
+                .orElseThrow(() -> new ProfilNotFoundException(playerId));
+        profil.setRegion(region);
+        return DtoEntityUtil.profilToProfilDto(profil);
     }
 }
