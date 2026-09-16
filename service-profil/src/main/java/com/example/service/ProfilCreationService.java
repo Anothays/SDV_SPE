@@ -8,19 +8,28 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.dao.ProfilDao;
 import com.example.dto.PlayerRegisteredEvent;
 import com.example.dto.ProfilDto;
-import com.example.kafka.ProfilEventProducer;
+import com.example.outbox.OutboxEvent;
+import com.example.outbox.OutboxEventDao;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ProfilCreationService {
 
     private static final Logger log = LoggerFactory.getLogger(ProfilCreationService.class);
+    // Doit rester identique à KafkaTopicConfig.PROFIL_CREATED_TOPIC (package-private,
+    // inaccessible depuis com.example.service) et à route.topic.replacement du
+    // connecteur Debezium (service-messaging/debezium/profil-outbox-connector.json).
+    private static final String PROFIL_CREATED_TOPIC = "players.profil.created";
 
     private final ProfilDao profilDao;
-    private final ProfilEventProducer profilEventProducer;
+    private final OutboxEventDao outboxEventDao;
+    private final ObjectMapper objectMapper;
 
-    public ProfilCreationService(ProfilDao profilDao, ProfilEventProducer profilEventProducer) {
+    public ProfilCreationService(ProfilDao profilDao, OutboxEventDao outboxEventDao, ObjectMapper objectMapper) {
         this.profilDao = profilDao;
-        this.profilEventProducer = profilEventProducer;
+        this.outboxEventDao = outboxEventDao;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -43,6 +52,22 @@ public class ProfilCreationService {
         dto.setRegion(event.region());
         dto.setLevel(1);
         ProfilDto saved = profilDao.save(dto);
-        profilEventProducer.publishProfilCreated(saved);
+
+        // Outbox pattern : l'événement est inséré dans la même transaction que le
+        // profil, Debezium (CDC sur le binlog MySQL) le publie ensuite vers Kafka.
+        // Atomicité garantie, plus de dual-write (spec §11).
+        outboxEventDao.save(OutboxEvent.of(
+                PROFIL_CREATED_TOPIC,
+                saved.getPlayerId(),
+                "ProfilCreated",
+                toJson(saved)));
+    }
+
+    private String toJson(ProfilDto dto) {
+        try {
+            return objectMapper.writeValueAsString(dto);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Impossible de sérialiser ProfilDto", e);
+        }
     }
 }
