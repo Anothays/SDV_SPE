@@ -1,4 +1,4 @@
-package com.example.MaDemo;
+package com.example.MaDemo.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,15 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.dao.ProfilDao;
 import com.example.dto.ProfilDto;
+import com.example.repository.ProfilRepository;
 
 @SpringBootTest
 @Transactional
-class ProfilDaoTest {
+class ProfilRepositoryTest {
 
     @Autowired
-    private ProfilDao profilDao;
+    private ProfilRepository profilRepository;
 
     @Test
     void savesThenFindsByPlayerId() {
@@ -25,11 +25,11 @@ class ProfilDaoTest {
         dto.setRegion("EU");
         dto.setLevel(1);
 
-        ProfilDto saved = profilDao.save(dto);
+        ProfilDto saved = profilRepository.save(dto);
 
         assertThat(saved.getId()).isNotNull();
-        assertThat(profilDao.existsByPlayerId("uuid-1")).isTrue();
-        assertThat(profilDao.findByPlayerId("uuid-1"))
+        assertThat(profilRepository.existsByPlayerId("uuid-1")).isTrue();
+        assertThat(profilRepository.findByPlayerId("uuid-1"))
                 .hasValueSatisfying(p -> {
                     assertThat(p.getUsername()).isEqualTo("alice");
                     assertThat(p.getLevel()).isEqualTo(1);
@@ -39,6 +39,6 @@ class ProfilDaoTest {
 
     @Test
     void existsByPlayerIdIsFalseForUnknownPlayer()  {
-        assertThat(profilDao.existsByPlayerId("inconnu")).isFalse();
+        assertThat(profilRepository.existsByPlayerId("inconnu")).isFalse();
     }
 }

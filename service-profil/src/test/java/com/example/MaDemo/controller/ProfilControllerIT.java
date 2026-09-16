@@ -1,4 +1,4 @@
-package com.example.MaDemo;
+package com.example.MaDemo.controller;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -15,8 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.dao.ProfilDao;
 import com.example.dto.ProfilDto;
+import com.example.repository.ProfilRepository;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -28,7 +28,7 @@ class ProfilControllerIT {
     private MockMvc mockMvc;
 
     @Autowired
-    private ProfilDao profilDao;
+    private ProfilRepository profilRepository;
 
     @BeforeEach
     void seedProfil() {
@@ -37,7 +37,7 @@ class ProfilControllerIT {
         dto.setUsername("alice");
         dto.setRegion("EU");
         dto.setLevel(1);
-        profilDao.save(dto);
+        profilRepository.save(dto);
     }
 
     @Test

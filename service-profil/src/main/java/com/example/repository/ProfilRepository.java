@@ -1,4 +1,4 @@
-package com.example.dao;
+package com.example.repository;
 
 import java.util.Optional;
 
@@ -6,19 +6,19 @@ import org.springframework.stereotype.Repository;
 
 import com.example.dto.ProfilDto;
 import com.example.entity.Profil;
-import com.example.util.DtoEntityUtil;
+import com.example.mapper.ProfilMapper;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 @Repository
-public class ProfilDao {
+public class ProfilRepository {
 
     @PersistenceContext
     private EntityManager entityManager;
 
     public ProfilDto save(ProfilDto profilDto) {
-        Profil profil = DtoEntityUtil.profilDtoToProfil(profilDto);
+        Profil profil = ProfilMapper.profilDtoToProfil(profilDto);
         entityManager.persist(profil);
         profilDto.setId(profil.getId());
         return profilDto;
@@ -29,8 +29,8 @@ public class ProfilDao {
     }
 
     public Optional<Profil> findByPlayerId(String playerId) {
-        // getResultList() (et non getResultStream()) : ce DAO est appelé hors
-        // transaction (ex. lecture depuis un autre thread) — un stream JPA a
+        // getResultList() (et non getResultStream()) : ce repository est appelé
+        // hors transaction (ex. lecture depuis un autre thread) — un stream JPA a
         // besoin d'une connexion ouverte pendant toute sa consommation, une
         // liste est matérialisée immédiatement.
         return entityManager

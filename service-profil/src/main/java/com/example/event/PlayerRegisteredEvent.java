@@ -1,4 +1,4 @@
-package com.example.dto;
+package com.example.event;
 
 /**
  * Contrat players.registered v1, côté consommateur.

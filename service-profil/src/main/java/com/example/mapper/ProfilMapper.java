@@ -1,9 +1,9 @@
-package com.example.util;
+package com.example.mapper;
 
 import com.example.dto.ProfilDto;
 import com.example.entity.Profil;
 
-public class DtoEntityUtil {
+public class ProfilMapper {
 
     public static Profil profilDtoToProfil(ProfilDto profilDto) {
         Profil profil = new Profil();

@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import com.example.dto.PlayerRegisteredEvent;
+import com.example.event.PlayerRegisteredEvent;
 import com.example.service.ProfilCreationService;
 
 @Component

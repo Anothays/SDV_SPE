@@ -5,11 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.dao.ProfilDao;
-import com.example.dto.PlayerRegisteredEvent;
 import com.example.dto.ProfilDto;
+import com.example.event.PlayerRegisteredEvent;
 import com.example.outbox.OutboxEvent;
-import com.example.outbox.OutboxEventDao;
+import com.example.outbox.OutboxEventRepository;
+import com.example.repository.ProfilRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,13 +22,14 @@ public class ProfilCreationService {
     // connecteur Debezium (service-messaging/debezium/profil-outbox-connector.json).
     private static final String PROFIL_CREATED_TOPIC = "players.profil.created";
 
-    private final ProfilDao profilDao;
-    private final OutboxEventDao outboxEventDao;
+    private final ProfilRepository profilRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
 
-    public ProfilCreationService(ProfilDao profilDao, OutboxEventDao outboxEventDao, ObjectMapper objectMapper) {
-        this.profilDao = profilDao;
-        this.outboxEventDao = outboxEventDao;
+    public ProfilCreationService(ProfilRepository profilRepository, OutboxEventRepository outboxEventRepository,
+            ObjectMapper objectMapper) {
+        this.profilRepository = profilRepository;
+        this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -41,7 +42,7 @@ public class ProfilCreationService {
         if (event.playerId() == null || event.playerId().isBlank()) {
             throw new IllegalArgumentException("playerId manquant dans players.registered");
         }
-        if (profilDao.existsByPlayerId(event.playerId())) {
+        if (profilRepository.existsByPlayerId(event.playerId())) {
             log.info("Profil déjà existant pour playerId={}, événement ignoré (idempotence)",
                     event.playerId());
             return;
@@ -51,12 +52,12 @@ public class ProfilCreationService {
         dto.setUsername(event.username());
         dto.setRegion(event.region());
         dto.setLevel(1);
-        ProfilDto saved = profilDao.save(dto);
+        ProfilDto saved = profilRepository.save(dto);
 
         // Outbox pattern : l'événement est inséré dans la même transaction que le
         // profil, Debezium (CDC sur le binlog MySQL) le publie ensuite vers Kafka.
         // Atomicité garantie, plus de dual-write (spec §11).
-        outboxEventDao.save(OutboxEvent.of(
+        outboxEventRepository.save(OutboxEvent.of(
                 PROFIL_CREATED_TOPIC,
                 saved.getPlayerId(),
                 "ProfilCreated",

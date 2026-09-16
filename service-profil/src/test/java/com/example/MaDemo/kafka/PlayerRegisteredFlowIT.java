@@ -1,4 +1,4 @@
-package com.example.MaDemo;
+package com.example.MaDemo.kafka;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -20,8 +20,8 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
-import com.example.dao.ProfilDao;
-import com.example.dto.PlayerRegisteredEvent;
+import com.example.event.PlayerRegisteredEvent;
+import com.example.repository.ProfilRepository;
 
 @SpringBootTest
 @DirtiesContext
@@ -35,7 +35,7 @@ class PlayerRegisteredFlowIT {
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
-    private ProfilDao profilDao;
+    private ProfilRepository profilRepository;
 
     @Autowired
     private EmbeddedKafkaBroker broker;
@@ -46,7 +46,7 @@ class PlayerRegisteredFlowIT {
                 "evt-ok", 1, "2026-07-18T10:00:00Z", "uuid-ok", "alice", "EU"));
 
         await().atMost(Duration.ofSeconds(15))
-                .untilAsserted(() -> assertThat(profilDao.existsByPlayerId("uuid-ok")).isTrue());
+                .untilAsserted(() -> assertThat(profilRepository.existsByPlayerId("uuid-ok")).isTrue());
     }
 
     @Test

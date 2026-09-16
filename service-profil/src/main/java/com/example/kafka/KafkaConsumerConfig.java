@@ -16,7 +16,7 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.util.backoff.ExponentialBackOff;
 
-import com.example.dto.PlayerRegisteredEvent;
+import com.example.event.PlayerRegisteredEvent;
 
 @Configuration
 public class KafkaConsumerConfig {
