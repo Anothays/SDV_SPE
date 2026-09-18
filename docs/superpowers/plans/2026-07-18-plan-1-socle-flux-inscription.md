@@ -33,23 +33,23 @@ Le renommage `monitoring-service` → `service-monitoring` et `load-testing` →
 **Interfaces:**
 - Produces: un `docker compose config` valide, prérequis de toutes les tâches suivantes.
 
-- [ ] **Step 1: Vérifier l'état réel**
+- [x] **Step 1: Vérifier l'état réel**
 
 Run: `docker compose config -q && ls monitoring-service load-testing 2>&1`
 Expected: `ls` répond "No such file or directory" pour les deux (les répertoires s'appellent désormais `service-monitoring` et `service-load-testing`). Si `docker-compose.yml` référence encore les anciens noms, continuer ; s'il a déjà été corrigé par l'utilisateur, passer directement à la Task 2.
 
-- [ ] **Step 2: Corriger les chemins de volumes**
+- [x] **Step 2: Corriger les chemins de volumes**
 
 Dans `docker-compose.yml`, remplacer toutes les occurrences :
 - `./monitoring-service/` → `./service-monitoring/` (volumes de `prometheus`, `grafana`, `alertmanager`)
 - `./load-testing/` → `./service-load-testing/` (volumes de `jmeter`)
 
-- [ ] **Step 3: Valider la config**
+- [x] **Step 3: Valider la config**
 
 Run: `docker compose config -q && echo OK`
 Expected: `OK` (aucune erreur).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docker-compose.yml
@@ -71,7 +71,7 @@ git commit -m "fix: update compose volume paths after service directory rename"
 **Interfaces:**
 - Produces: module Maven `service-identite` compilable et testable (H2 en test), base de tous les ajouts suivants.
 
-- [ ] **Step 1: Copier le wrapper Maven depuis service-profil**
+- [x] **Step 1: Copier le wrapper Maven depuis service-profil**
 
 ```bash
 cp -r service-profil/.mvn service-identite/.mvn
@@ -80,7 +80,7 @@ cp service-profil/mvnw service-profil/mvnw.cmd service-identite/
 
 (Créer d'abord `mkdir -p service-identite`.)
 
-- [ ] **Step 2: Écrire le pom.xml**
+- [x] **Step 2: Écrire le pom.xml**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -197,7 +197,7 @@ cp service-profil/mvnw service-profil/mvnw.cmd service-identite/
 </project>
 ```
 
-- [ ] **Step 3: Classe application**
+- [x] **Step 3: Classe application**
 
 `service-identite/src/main/java/com/nebula/identite/IdentiteApplication.java` :
 
@@ -216,7 +216,7 @@ public class IdentiteApplication {
 }
 ```
 
-- [ ] **Step 4: application.properties (main)**
+- [x] **Step 4: application.properties (main)**
 
 `service-identite/src/main/resources/application.properties` :
 
@@ -264,7 +264,7 @@ spring.kafka.admin.fail-fast=false
 jwt.private-key-location=classpath:keys/dev-private.pem
 ```
 
-- [ ] **Step 5: application.properties (test, H2)**
+- [x] **Step 5: application.properties (test, H2)**
 
 `service-identite/src/test/resources/application.properties` :
 
@@ -279,7 +279,7 @@ spring.kafka.bootstrap-servers=localhost:9094
 spring.kafka.admin.fail-fast=false
 ```
 
-- [ ] **Step 6: Dockerfile (même pattern que service-profil)**
+- [x] **Step 6: Dockerfile (même pattern que service-profil)**
 
 `service-identite/Dockerfile` :
 
@@ -300,7 +300,7 @@ COPY --from=build /app/target/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-- [ ] **Step 7: Test de contexte**
+- [x] **Step 7: Test de contexte**
 
 `service-identite/src/test/java/com/nebula/identite/IdentiteApplicationTests.java` :
 
@@ -321,12 +321,12 @@ class IdentiteApplicationTests {
 
 Note : ce test échouera tant que la Task 4 (clés JWT) n'existe pas ? Non — aucun bean ne référence encore `jwt.private-key-location`. Il doit passer dès maintenant.
 
-- [ ] **Step 8: Vérifier**
+- [x] **Step 8: Vérifier**
 
 Run: `cd service-identite && ./mvnw -q test`
 Expected: `BUILD SUCCESS`, 1 test passé.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add service-identite
@@ -349,7 +349,7 @@ git commit -m "feat(identite): scaffold identity service (Spring Boot, PostgreSQ
 - Produces: `JwtService.issue(String playerId, String username, String role) : String` (JWT RS256 signé, exp 1 h) ; bean `RSAPrivateKey` chargé depuis `jwt.private-key-location`.
 - La clé publique `dev-public.pem` sera consommée par la gateway (plan 4).
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 `service-identite/src/test/java/com/nebula/identite/auth/JwtServiceTest.java` :
 
@@ -396,12 +396,12 @@ class JwtServiceTest {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest=JwtServiceTest`
 Expected: FAIL — `cannot find symbol: class JwtService` (erreur de compilation).
 
-- [ ] **Step 3: Implémenter JwtService**
+- [x] **Step 3: Implémenter JwtService**
 
 `service-identite/src/main/java/com/nebula/identite/auth/JwtService.java` :
 
@@ -445,12 +445,12 @@ public class JwtService {
 }
 ```
 
-- [ ] **Step 4: Vérifier que le test passe**
+- [x] **Step 4: Vérifier que le test passe**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest=JwtServiceTest`
 Expected: PASS.
 
-- [ ] **Step 5: Script de génération des clés de dev + génération**
+- [x] **Step 5: Script de génération des clés de dev + génération**
 
 `service-identite/scripts/generate-dev-jwt-keys.sh` :
 
@@ -469,7 +469,7 @@ echo "Clés générées dans $KEYS_DIR"
 Run: `chmod +x service-identite/scripts/generate-dev-jwt-keys.sh && service-identite/scripts/generate-dev-jwt-keys.sh`
 Expected: `Clés générées dans …/src/main/resources/keys` ; les deux fichiers `.pem` existent.
 
-- [ ] **Step 6: Charger la clé privée au démarrage**
+- [x] **Step 6: Charger la clé privée au démarrage**
 
 `service-identite/src/main/java/com/nebula/identite/config/JwtKeyConfig.java` :
 
@@ -508,12 +508,12 @@ public class JwtKeyConfig {
 }
 ```
 
-- [ ] **Step 7: Vérifier la suite complète**
+- [x] **Step 7: Vérifier la suite complète**
 
 Run: `cd service-identite && ./mvnw -q test`
 Expected: `BUILD SUCCESS` — `contextLoads` valide au passage le chargement réel du PEM.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add service-identite
@@ -540,7 +540,7 @@ git commit -m "feat(identite): issue RS256 JWTs with dev keypair"
 - Consumes: `JwtService.issue(playerId, username, role)` (Task 3).
 - La Task 5 modifiera `AuthService.register` pour publier `players.registered`.
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 `service-identite/src/test/java/com/nebula/identite/auth/AuthServiceTest.java` :
 
@@ -638,12 +638,12 @@ class AuthServiceTest {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest=AuthServiceTest`
 Expected: FAIL — classes `Account`, `AccountDao`, `AuthService`… introuvables (compilation).
 
-- [ ] **Step 3: Implémenter**
+- [x] **Step 3: Implémenter**
 
 `service-identite/src/main/java/com/nebula/identite/auth/Account.java` :
 
@@ -847,12 +847,12 @@ public class AuthService {
 }
 ```
 
-- [ ] **Step 4: Vérifier que les tests passent**
+- [x] **Step 4: Vérifier que les tests passent**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest=AuthServiceTest`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-identite
@@ -876,7 +876,7 @@ git commit -m "feat(identite): account registration and login with bcrypt"
 - Produces: topic `players.registered` (3 partitions, rétention 7 j), payload JSON `{eventId, eventVersion, occurredAt, playerId, username, region}`, clé Kafka = playerId, **sans** header de type. C'est le contrat que le service Profil consommera (Task 8+).
 - Consumes: `Account` (Task 4).
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 `service-identite/src/test/java/com/nebula/identite/kafka/PlayerRegisteredEventTest.java` :
 
@@ -927,12 +927,12 @@ class PlayerRegisteredEventTest {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest=PlayerRegisteredEventTest`
 Expected: FAIL — `PlayerRegisteredEvent` introuvable.
 
-- [ ] **Step 3: Implémenter événement, topic et producteur**
+- [x] **Step 3: Implémenter événement, topic et producteur**
 
 `service-identite/src/main/java/com/nebula/identite/kafka/PlayerRegisteredEvent.java` :
 
@@ -1138,12 +1138,12 @@ Et ajouter le test :
     }
 ```
 
-- [ ] **Step 4: Vérifier les tests unitaires**
+- [x] **Step 4: Vérifier les tests unitaires**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest='PlayerRegisteredEventTest,AuthServiceTest'`
 Expected: PASS (7 tests).
 
-- [ ] **Step 5: Test d'intégration EmbeddedKafka (contrat sur le fil)**
+- [x] **Step 5: Test d'intégration EmbeddedKafka (contrat sur le fil)**
 
 `service-identite/src/test/java/com/nebula/identite/kafka/PlayerRegisteredProducerIT.java` :
 
@@ -1209,12 +1209,12 @@ class PlayerRegisteredProducerIT {
 }
 ```
 
-- [ ] **Step 6: Vérifier la suite complète**
+- [x] **Step 6: Vérifier la suite complète**
 
 Run: `cd service-identite && ./mvnw -q test`
 Expected: `BUILD SUCCESS`, tous tests verts (unitaires + IT EmbeddedKafka).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add service-identite
@@ -1235,7 +1235,7 @@ git commit -m "feat(identite): publish players.registered event on registration"
 - Produces: `POST /auth/register` → 201 `{playerId, token}` (409 si doublon, 400 si invalide) ; `POST /auth/login` → 200 `{playerId, token}` (401 si identifiants invalides). Routes que la gateway exposera en public (plan 4).
 - Consumes: `AuthService` (Tasks 4-5).
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 `service-identite/src/test/java/com/nebula/identite/auth/AuthControllerIT.java` :
 
@@ -1315,12 +1315,12 @@ class AuthControllerIT {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-identite && ./mvnw -q test -Dtest=AuthControllerIT`
 Expected: FAIL — 401/404 sur les routes (contrôleur et SecurityConfig absents).
 
-- [ ] **Step 3: Implémenter contrôleur, handler d'erreurs et sécurité**
+- [x] **Step 3: Implémenter contrôleur, handler d'erreurs et sécurité**
 
 `service-identite/src/main/java/com/nebula/identite/auth/AuthController.java` :
 
@@ -1430,12 +1430,12 @@ public class SecurityConfig {
 }
 ```
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `cd service-identite && ./mvnw -q test`
 Expected: `BUILD SUCCESS`, toute la suite verte.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-identite
@@ -1452,7 +1452,7 @@ git commit -m "feat(identite): REST auth endpoints with stateless security"
 **Interfaces:**
 - Produces: services compose `db-identite` (PostgreSQL 16) et `identite` (port hôte 8082), sur le réseau `monitoring-net` existant. L'E2E (Task 12) et les plans suivants en dépendent.
 
-- [ ] **Step 1: Ajouter les deux services**
+- [x] **Step 1: Ajouter les deux services**
 
 Dans `docker-compose.yml`, ajouter au niveau de `services:` :
 
@@ -1495,12 +1495,12 @@ Dans `docker-compose.yml`, ajouter au niveau de `services:` :
     restart: on-failure
 ```
 
-- [ ] **Step 2: Builder et démarrer**
+- [x] **Step 2: Builder et démarrer**
 
 Run: `docker compose up -d --build identite`
 Expected: `db-identite`, `kafka` puis `identite` démarrent. Vérifier : `docker compose ps identite` → `Up`.
 
-- [ ] **Step 3: Vérifier l'inscription et l'événement de bout en bout**
+- [x] **Step 3: Vérifier l'inscription et l'événement de bout en bout**
 
 Run:
 
@@ -1522,7 +1522,7 @@ docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
 
 Expected: une ligne JSON contenant `"username":"compose-check"` et aucun champ `email`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docker-compose.yml
@@ -1550,7 +1550,7 @@ git commit -m "feat(compose): add identite service with dedicated postgres"
 - Produces: entité `Profil` conforme au modèle spec §5 (`player_id` UUID String unique, `username`, `region`, `level` défaut 1, timestamps) ; `ProfilDao.findByPlayerId(String) : Optional<Profil>` et `ProfilDao.existsByPlayerId(String) : boolean` ; `ProfilDto {id, playerId, username, region, level}` ; tests exécutables sans MySQL (H2).
 - La Task 9 (consommateur) et la Task 11 (contrôleur) reposent sur ces signatures.
 
-- [ ] **Step 1: Dépendances test + config H2**
+- [x] **Step 1: Dépendances test + config H2**
 
 Dans `service-profil/pom.xml`, ajouter aux `<dependencies>` :
 
@@ -1588,7 +1588,7 @@ spring.kafka.listener.auto-startup=false
 spring.kafka.admin.fail-fast=false
 ```
 
-- [ ] **Step 2: Écrire le test DAO qui échoue**
+- [x] **Step 2: Écrire le test DAO qui échoue**
 
 `service-profil/src/test/java/com/example/MaDemo/ProfilDaoTest.java` :
 
@@ -1639,12 +1639,12 @@ class ProfilDaoTest {
 }
 ```
 
-- [ ] **Step 3: Vérifier l'échec**
+- [x] **Step 3: Vérifier l'échec**
 
 Run: `cd service-profil && ./mvnw -q test -Dtest=ProfilDaoTest`
 Expected: FAIL — `setPlayerId`, `findByPlayerId`… introuvables (compilation).
 
-- [ ] **Step 4: Implémenter la refonte**
+- [x] **Step 4: Implémenter la refonte**
 
 `service-profil/src/main/java/com/example/entity/Profil.java` :
 
@@ -1857,12 +1857,12 @@ Supprimer `service-profil/src/main/java/com/example/DataTestRunner.java` et
 
 `ProfilService.saveProfil` et `ProfilController.create` référencent encore l'ancien monde mais compilent toujours (ils passent par `ProfilDto`) — ils seront remaniés en Tasks 9 et 11.
 
-- [ ] **Step 5: Vérifier**
+- [x] **Step 5: Vérifier**
 
 Run: `cd service-profil && ./mvnw -q test`
 Expected: `BUILD SUCCESS` — `ProfilDaoTest` (2 tests) + `MaDemoApplicationTests` passent désormais sans MySQL ni Kafka.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add service-profil
@@ -1885,7 +1885,7 @@ git commit -m "refactor(profil): align Profil entity with spec model (playerId, 
 - Consumes: contrat `players.registered` v1 (Task 5) — DTO **dupliqué volontairement** côté Profil ; `ProfilDao` (Task 8) ; `ProfilEventProducer` (existant).
 - Produces: `ProfilCreationService.onPlayerRegistered(PlayerRegisteredEvent) : void` (idempotent, `IllegalArgumentException` si playerId manquant) ; consumer group `profil-service` ; factory `playerRegisteredKafkaListenerContainerFactory` (la Task 10 y branchera le DLT).
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 `service-profil/src/test/java/com/example/MaDemo/ProfilCreationServiceTest.java` :
 
@@ -1964,12 +1964,12 @@ class ProfilCreationServiceTest {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-profil && ./mvnw -q test -Dtest=ProfilCreationServiceTest`
 Expected: FAIL — `PlayerRegisteredEvent`, `ProfilCreationService` introuvables.
 
-- [ ] **Step 3: Implémenter**
+- [x] **Step 3: Implémenter**
 
 `service-profil/src/main/java/com/example/dto/PlayerRegisteredEvent.java` :
 
@@ -2125,12 +2125,12 @@ public class PlayerRegisteredConsumer {
 }
 ```
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `cd service-profil && ./mvnw -q test`
 Expected: `BUILD SUCCESS` — `ProfilCreationServiceTest` (3 tests) et le reste au vert.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-profil
@@ -2150,7 +2150,7 @@ git commit -m "feat(profil): create profile reactively from players.registered e
 - Consumes: factory `playerRegisteredKafkaListenerContainerFactory` (Task 9), `KafkaTemplate` auto-configuré.
 - Produces: topic `players.registered.dlt` (1 partition, rétention 14 j) recevant les événements en échec après 3 retries (spec §6). Le monitoring (plan 5) alertera sur ce topic.
 
-- [ ] **Step 1: Écrire le test d'intégration qui échoue**
+- [x] **Step 1: Écrire le test d'intégration qui échoue**
 
 `service-profil/src/test/java/com/example/MaDemo/PlayerRegisteredFlowIT.java` :
 
@@ -2223,12 +2223,12 @@ class PlayerRegisteredFlowIT {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-profil && ./mvnw -q test -Dtest=PlayerRegisteredFlowIT`
 Expected: `validEventCreatesProfil` PASS (listener déjà branché), mais `invalidEventLandsInDeadLetterTopicAfterRetries` FAIL — timeout : rien n'est publié sur le DLT (pas encore d'error handler).
 
-- [ ] **Step 3: Brancher retry + DLT**
+- [x] **Step 3: Brancher retry + DLT**
 
 Dans `service-profil/src/main/java/com/example/kafka/KafkaTopicConfig.java`, ajouter le bean du DLT (le DLT appartient au consommateur qui échoue) :
 
@@ -2302,17 +2302,17 @@ public class KafkaConsumerConfig {
 }
 ```
 
-- [ ] **Step 4: Vérifier que les deux tests passent**
+- [x] **Step 4: Vérifier que les deux tests passent**
 
 Run: `cd service-profil && ./mvnw -q test -Dtest=PlayerRegisteredFlowIT`
 Expected: PASS (2 tests) — le rejet arrive dans `players.registered.dlt` après les retries.
 
-- [ ] **Step 5: Suite complète**
+- [x] **Step 5: Suite complète**
 
 Run: `cd service-profil && ./mvnw -q test`
 Expected: `BUILD SUCCESS`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add service-profil
@@ -2335,7 +2335,7 @@ git commit -m "feat(profil): retry with exponential backoff and dead letter topi
 - Consumes: `ProfilDao.findByPlayerId` (Task 8).
 - Note : l'authentification reste le HTTP Basic existant (`ali`/`password123`) jusqu'à la gateway JWT (plan 4).
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 `service-profil/src/test/java/com/example/MaDemo/ProfilControllerIT.java` :
 
@@ -2422,12 +2422,12 @@ class ProfilControllerIT {
 }
 ```
 
-- [ ] **Step 2: Vérifier l'échec**
+- [x] **Step 2: Vérifier l'échec**
 
 Run: `cd service-profil && ./mvnw -q test -Dtest=ProfilControllerIT`
 Expected: FAIL — GET/PUT inexistants (404/405), POST encore présent.
 
-- [ ] **Step 3: Implémenter**
+- [x] **Step 3: Implémenter**
 
 `service-profil/src/main/java/com/example/service/ProfilNotFoundException.java` :
 
@@ -2545,12 +2545,12 @@ public class ProfilController {
 
 Note : `postCreateIsGone` attend 405 (méthode absente sur une route existante).
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `cd service-profil && ./mvnw -q test`
 Expected: `BUILD SUCCESS`, toute la suite verte.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-profil
@@ -2568,12 +2568,12 @@ git commit -m "feat(profil): read/update REST API, profile creation is event-onl
 - Consumes: tout le plan.
 - Produces: procédure de démo reproductible (soutenance) ; point de départ du plan 2 (flux match).
 
-- [ ] **Step 1: Tout reconstruire et démarrer**
+- [x] **Step 1: Tout reconstruire et démarrer**
 
 Run: `docker compose up -d --build`
 Expected: `app`, `db`, `identite`, `db-identite`, `kafka`, `prometheus`, `grafana`, `alertmanager`, `influxdb`, `akhq` tous `Up` (`docker compose ps`).
 
-- [ ] **Step 2: Dérouler le flux complet**
+- [x] **Step 2: Dérouler le flux complet**
 
 ```bash
 # 1. Inscription → récupérer le playerId
@@ -2592,7 +2592,7 @@ curl -s -u ali:password123 "localhost:8080/api/profils/$PLAYER_ID"
 
 Expected: le dernier `curl` renvoie `{"id":…,"playerId":"<uuid>","username":"e2e-alice","region":"EU","level":1}`.
 
-- [ ] **Step 3: Vérifier l'aval Kafka**
+- [x] **Step 3: Vérifier l'aval Kafka**
 
 ```bash
 docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
@@ -2602,7 +2602,7 @@ docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
 
 Expected: un JSON avec `"username":"e2e-alice"` (le profil republié). Vérifier aussi dans AKHQ (http://localhost:8081) que `players.registered.dlt` est vide.
 
-- [ ] **Step 4: Documenter dans le README**
+- [x] **Step 4: Documenter dans le README**
 
 Ajouter au `README.md` une section :
 
@@ -2617,7 +2617,7 @@ aucun appel HTTP inter-services). Détails : `docs/superpowers/specs/2026-07-18-
 - Démo rapide : voir `docs/superpowers/plans/2026-07-18-plan-1-socle-flux-inscription.md`, Task 12.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md
