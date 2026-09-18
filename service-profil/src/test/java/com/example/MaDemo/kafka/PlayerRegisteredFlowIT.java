@@ -20,8 +20,8 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
+import com.example.domain.port.out.ProfilPort;
 import com.example.event.PlayerRegisteredEvent;
-import com.example.repository.ProfilRepository;
 
 @SpringBootTest
 @DirtiesContext
@@ -35,7 +35,7 @@ class PlayerRegisteredFlowIT {
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
-    private ProfilRepository profilRepository;
+    private ProfilPort profilPort;
 
     @Autowired
     private EmbeddedKafkaBroker broker;
@@ -46,7 +46,7 @@ class PlayerRegisteredFlowIT {
                 "evt-ok", 1, "2026-07-18T10:00:00Z", "uuid-ok", "alice", "EU"));
 
         await().atMost(Duration.ofSeconds(15))
-                .untilAsserted(() -> assertThat(profilRepository.existsByPlayerId("uuid-ok")).isTrue());
+                .untilAsserted(() -> assertThat(profilPort.existsByPlayerId("uuid-ok")).isTrue());
     }
 
     @Test

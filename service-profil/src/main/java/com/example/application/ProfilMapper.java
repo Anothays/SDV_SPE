@@ -1,7 +1,7 @@
-package com.example.mapper;
+package com.example.application;
 
+import com.example.domain.Profil;
 import com.example.dto.ProfilDto;
-import com.example.entity.Profil;
 
 public class ProfilMapper {
 

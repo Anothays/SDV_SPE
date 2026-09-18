@@ -15,8 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.dto.ProfilDto;
-import com.example.repository.ProfilRepository;
+import com.example.domain.Profil;
+import com.example.domain.port.out.ProfilPort;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -28,16 +28,16 @@ class ProfilControllerIT {
     private MockMvc mockMvc;
 
     @Autowired
-    private ProfilRepository profilRepository;
+    private ProfilPort profilPort;
 
     @BeforeEach
     void seedProfil() {
-        ProfilDto dto = new ProfilDto();
-        dto.setPlayerId("uuid-1");
-        dto.setUsername("alice");
-        dto.setRegion("EU");
-        dto.setLevel(1);
-        profilRepository.save(dto);
+        Profil profil = new Profil();
+        profil.setPlayerId("uuid-1");
+        profil.setUsername("alice");
+        profil.setRegion("EU");
+        profil.setLevel(1);
+        profilPort.save(profil);
     }
 
     @Test
