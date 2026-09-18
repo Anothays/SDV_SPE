@@ -3,14 +3,14 @@
 help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Démarre toute la stack (app, db, kafka, monitoring)
+setup: ## Démarre toute la stack (sso, role-manager, db, kafka, monitoring)
 	docker compose up -d --build
 
 down: ## Arrête et supprime les containers
 	docker compose down
 
-logs: ## Suit les logs de l'application
-	docker compose logs -f app
+logs: ## Suit les logs de role-manager et sso
+	docker compose logs -f role-manager sso
 
 load-test: ## Lance le test de charge JMeter (50 users / 60s)
 	docker compose --profile testing run --rm jmeter

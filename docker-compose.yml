@@ -1,11 +1,11 @@
 services:
-  app:
-    container_name: "app"
-    build: service-profil
+  role-manager:
+    container_name: "role-manager"
+    build: service-role-manager
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/maBase
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/role_manager
       SPRING_DATASOURCE_USERNAME: devuser
       SPRING_DATASOURCE_PASSWORD: devpassword
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
@@ -47,7 +47,7 @@ services:
     # Binlog au format ROW : requis par le connecteur Debezium MySQL (CDC).
     command: ["--log-bin=mysql-bin", "--binlog-format=ROW", "--server-id=184054", "--binlog-row-image=FULL"]
     environment:
-      MYSQL_DATABASE: maBase
+      MYSQL_DATABASE: role_manager
       MYSQL_USER: devuser
       MYSQL_PASSWORD: devpassword
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -74,7 +74,7 @@ services:
       - ./service-monitoring/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus_data:/prometheus
     depends_on:
-      - app
+      - role-manager
     networks:
       - monitoring-net
 
@@ -162,7 +162,7 @@ services:
     networks:
       - monitoring-net
 
-  # Enregistre les connecteurs outbox (sso, profil) au démarrage — même
+  # Enregistre les connecteurs outbox (sso, role-manager) au démarrage — même
   # esprit que le provisioning automatique de Grafana : `docker compose up`
   # suffit, aucune étape manuelle.
   kafka-connect-init:
@@ -208,7 +208,7 @@ services:
       - ./service-load-testing/jmeter/results:/results
       - ./service-load-testing/jmeter/reports:/reports
     depends_on:
-      - app
+      - role-manager
       - influxdb
     networks:
       - monitoring-net

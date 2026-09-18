@@ -1,9 +1,9 @@
 groups:
-  - name: mademo-alerts
+  - name: nebula-alerts
     rules:
-      # L'app ne répond plus au scrape (crash, réseau, déploiement raté)
+      # Un service ne répond plus au scrape (crash, réseau, déploiement raté)
       - alert: AppDown
-        expr: up{job="spring-boot-app"} == 0
+        expr: up{job=~"role-manager|sso"} == 0
         for: 1m
         labels:
           severity: critical
