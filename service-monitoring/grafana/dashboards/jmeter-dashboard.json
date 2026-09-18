@@ -40,7 +40,7 @@
       }
     ]
   },
-  "description": "JMeter performance test results - MaDemo API",
+  "description": "JMeter performance test results - Nebula API",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -449,7 +449,7 @@
   "time": { "from": "now-3h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "JMeter - MaDemo Performance Tests",
+  "title": "JMeter - Nebula Performance Tests",
   "uid": "jmeter-mademo",
   "version": 1
 }

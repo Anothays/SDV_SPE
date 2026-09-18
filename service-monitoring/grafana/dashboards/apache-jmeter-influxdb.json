@@ -2981,8 +2981,8 @@
       },
       {
         "current": {
-          "text": "MaDemo",
-          "value": "MaDemo"
+          "text": "nebula",
+          "value": "nebula"
         },
         "datasource": { "type": "influxdb", "uid": "${data_source}" },
         "includeAll": false,
