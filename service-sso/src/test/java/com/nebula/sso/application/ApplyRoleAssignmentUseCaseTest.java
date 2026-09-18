@@ -76,4 +76,14 @@ class ApplyRoleAssignmentUseCaseTest {
                 .isInstanceOf(IllegalArgumentException.class);
         verify(accountPort, never()).save(any());
     }
+
+    @Test
+    void rejectsUnknownRole_neverReachesJwtClaim() {
+        when(accountPort.findById("uuid-1")).thenReturn(Optional.of(playerAccount()));
+
+        assertThatThrownBy(() -> useCase.execute(
+                new RoleAssignedEvent("evt-3", 1, "2026-09-18T10:00:00Z", "uuid-1", "KING")))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(accountPort, never()).save(any());
+    }
 }

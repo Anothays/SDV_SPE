@@ -1,5 +1,7 @@
 package com.nebula.rolemanager.application;
 
+import java.time.Instant;
+
 import com.nebula.rolemanager.application.dto.RoleAssignmentDto;
 import com.nebula.rolemanager.application.event.RoleAssignedEvent;
 import com.nebula.rolemanager.domain.OutboxEventToPublish;
@@ -28,6 +30,9 @@ public class ChangeRoleUseCase {
         RoleAssignment assignment = roleAssignmentPort.findByPlayerId(playerId)
                 .orElseThrow(() -> new RoleAssignmentNotFoundException(playerId));
         assignment.setRole(role);
+        // Posé ici (et pas seulement par @PreUpdate, qui ne tourne qu'au flush) pour
+        // que le DTO renvoyé reflète la modification.
+        assignment.setUpdatedAt(Instant.now());
         RoleAssignment saved = roleAssignmentPort.save(assignment);
 
         eventPublisherPort.publish(new OutboxEventToPublish(

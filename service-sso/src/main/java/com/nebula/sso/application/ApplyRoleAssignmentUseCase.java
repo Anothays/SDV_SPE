@@ -1,5 +1,7 @@
 package com.nebula.sso.application;
 
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,9 @@ import com.nebula.sso.domain.port.out.AccountPort;
 public class ApplyRoleAssignmentUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(ApplyRoleAssignmentUseCase.class);
+    // Copie locale du contrat (pas d'enum partagée avec role-manager) : les trois
+    // rôles du dossier d'architecture §10.
+    static final Set<String> KNOWN_ROLES = Set.of("PLAYER", "MODERATOR", "ADMIN");
 
     private final AccountPort accountPort;
 
@@ -30,8 +35,9 @@ public class ApplyRoleAssignmentUseCase {
         if (event.playerId() == null || event.playerId().isBlank()) {
             throw new IllegalArgumentException("playerId manquant dans access.role.assigned");
         }
-        if (event.role() == null || event.role().isBlank()) {
-            throw new IllegalArgumentException("role manquant dans access.role.assigned");
+        if (event.role() == null || !KNOWN_ROLES.contains(event.role())) {
+            // Un rôle inconnu ne doit jamais atteindre le claim JWT : rejet → DLT.
+            throw new IllegalArgumentException("role invalide dans access.role.assigned : " + event.role());
         }
 
         Account account = accountPort.findById(event.playerId()).orElse(null);

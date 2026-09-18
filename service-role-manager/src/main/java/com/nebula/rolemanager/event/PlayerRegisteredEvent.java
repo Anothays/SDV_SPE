@@ -2,7 +2,7 @@ package com.nebula.rolemanager.event;
 
 /**
  * Contrat players.registered v1, côté consommateur.
- * Dupliqué volontairement depuis service-identite (pas de lib partagée) :
+ * Dupliqué volontairement depuis service-sso (pas de lib partagée) :
  * chaque service possède sa copie du contrat, c'est le découplage.
  */
 public record PlayerRegisteredEvent(

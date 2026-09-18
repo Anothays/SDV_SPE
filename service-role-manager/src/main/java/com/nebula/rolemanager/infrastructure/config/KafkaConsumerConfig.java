@@ -52,7 +52,11 @@ public class KafkaConsumerConfig {
         // 3 retries avec backoff exponentiel, puis DLT (spec §6)
         var backOff = new ExponentialBackOff(500L, 2.0);
         backOff.setMaxAttempts(3);
-        factory.setCommonErrorHandler(new DefaultErrorHandler(recoverer, backOff));
+        var errorHandler = new DefaultErrorHandler(recoverer, backOff);
+        // Message invalide (contrat violé) : erreur non transitoire, retenter est inutile
+        // et bloque la partition pour rien — direct au DLT.
+        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
+        factory.setCommonErrorHandler(errorHandler);
         return factory;
     }
 }
