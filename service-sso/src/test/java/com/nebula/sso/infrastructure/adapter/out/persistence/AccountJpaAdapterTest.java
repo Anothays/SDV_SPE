@@ -51,10 +51,13 @@ class AccountJpaAdapterTest {
         assertThat(accountPort.existsByEmail("alice@example.com")).isTrue();
         assertThat(accountPort.findByUsername("alice"))
                 .hasValueSatisfying(a -> assertThat(a.getEmail()).isEqualTo("alice@example.com"));
+        assertThat(accountPort.findById(account.getId()))
+                .hasValueSatisfying(a -> assertThat(a.getRole()).isEqualTo("PLAYER"));
     }
 
     @Test
     void existsByUsernameIsFalseForUnknownUser() {
         assertThat(accountPort.existsByUsername("inconnu")).isFalse();
+        assertThat(accountPort.findById("inconnu")).isEmpty();
     }
 }

@@ -37,6 +37,11 @@ public class AccountJpaAdapter implements AccountPort {
         return accountRepository.findByUsername(username).map(AccountJpaAdapter::toDomain);
     }
 
+    @Override
+    public Optional<Account> findById(String id) {
+        return accountRepository.findById(id).map(AccountJpaAdapter::toDomain);
+    }
+
     private static AccountEntity toEntity(Account account) {
         AccountEntity entity = new AccountEntity();
         entity.setId(account.getId());

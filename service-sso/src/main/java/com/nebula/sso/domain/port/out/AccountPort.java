@@ -13,4 +13,6 @@ public interface AccountPort {
     boolean existsByEmail(String email);
 
     Optional<Account> findByUsername(String username);
+
+    Optional<Account> findById(String id);
 }
