@@ -21,13 +21,13 @@ services:
       - monitoring-net
     restart: on-failure
 
-  identite:
-    container_name: "identite"
-    build: service-identite
+  sso:
+    container_name: "sso"
+    build: service-sso
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/identite
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sso
       SPRING_DATASOURCE_USERNAME: devuser
       SPRING_DATASOURCE_PASSWORD: devpassword
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -54,7 +54,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./service-messaging/mysql-init/create-identite-db.sql:/docker-entrypoint-initdb.d/1-create-identite-db.sql:ro
+      - ./service-messaging/mysql-init/create-sso-db.sql:/docker-entrypoint-initdb.d/1-create-sso-db.sql:ro
       - ./service-messaging/mysql-init/grant-replication.sql:/docker-entrypoint-initdb.d/2-grant-replication.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "devuser", "-pdevpassword"]
@@ -162,7 +162,7 @@ services:
     networks:
       - monitoring-net
 
-  # Enregistre les connecteurs outbox (identite, profil) au démarrage — même
+  # Enregistre les connecteurs outbox (sso, profil) au démarrage — même
   # esprit que le provisioning automatique de Grafana : `docker compose up`
   # suffit, aucune étape manuelle.
   kafka-connect-init:
