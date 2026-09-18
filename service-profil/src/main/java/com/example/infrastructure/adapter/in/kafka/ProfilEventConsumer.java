@@ -13,7 +13,8 @@ public class ProfilEventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(ProfilEventConsumer.class);
 
-    @KafkaListener(topics = KafkaTopicConfig.PROFIL_CREATED_TOPIC, groupId = "mademo")
+    @KafkaListener(topics = KafkaTopicConfig.PROFIL_CREATED_TOPIC, groupId = "mademo",
+            containerFactory = "profilEventKafkaListenerContainerFactory")
     public void onProfilCreated(ProfilDto profil) {
         log.info("Événement players.profil.created reçu : playerId={}, username={}",
                 profil.getPlayerId(), profil.getUsername());
