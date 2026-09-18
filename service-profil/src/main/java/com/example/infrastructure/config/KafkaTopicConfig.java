@@ -1,4 +1,4 @@
-package com.example.kafka;
+package com.example.infrastructure.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.TopicConfig;
@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-class KafkaTopicConfig {
+public class KafkaTopicConfig {
 
     public static final String PROFIL_CREATED_TOPIC = "players.profil.created";
     public static final String TELEMETRY_PLAYER_ACTION_TOPIC = "telemetry.player.action";

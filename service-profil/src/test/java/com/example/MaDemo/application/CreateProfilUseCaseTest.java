@@ -17,7 +17,7 @@ import com.example.domain.OutboxEventToPublish;
 import com.example.domain.Profil;
 import com.example.domain.port.out.EventPublisherPort;
 import com.example.domain.port.out.ProfilPort;
-import com.example.dto.ProfilDto;
+import com.example.application.dto.ProfilDto;
 import com.example.event.PlayerRegisteredEvent;
 
 class CreateProfilUseCaseTest {

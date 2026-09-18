@@ -4,8 +4,6 @@ import org.springframework.stereotype.Component;
 
 import com.example.domain.OutboxEventToPublish;
 import com.example.domain.port.out.EventPublisherPort;
-import com.example.outbox.OutboxEvent;
-import com.example.outbox.OutboxEventRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

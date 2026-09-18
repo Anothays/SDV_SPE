@@ -1,4 +1,4 @@
-package com.example.outbox;
+package com.example.infrastructure.adapter.out.outbox;
 
 import java.time.Instant;
 import java.util.UUID;

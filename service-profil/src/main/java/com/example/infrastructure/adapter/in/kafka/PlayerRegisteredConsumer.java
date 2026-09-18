@@ -1,4 +1,4 @@
-package com.example.kafka;
+package com.example.infrastructure.adapter.in.kafka;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.application.CreateProfilUseCase;
 import com.example.event.PlayerRegisteredEvent;
+import com.example.infrastructure.config.KafkaTopicConfig;
 
 @Component
 public class PlayerRegisteredConsumer {

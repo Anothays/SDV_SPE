@@ -1,11 +1,12 @@
-package com.example.kafka;
+package com.example.infrastructure.adapter.out.kafka;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.dto.TelemetryEventDto;
+import com.example.application.dto.TelemetryEventDto;
+import com.example.infrastructure.config.KafkaTopicConfig;
 
 @Component
 public class TelemetryEventProducer {

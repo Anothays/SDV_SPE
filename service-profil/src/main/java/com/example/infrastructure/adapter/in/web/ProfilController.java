@@ -1,4 +1,4 @@
-package com.example.controller;
+package com.example.infrastructure.adapter.in.web;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.application.ProfilService;
-import com.example.dto.ProfilDto;
-import com.example.dto.UpdateProfilRequest;
+import com.example.application.dto.ProfilDto;
+import com.example.application.dto.UpdateProfilRequest;
 
 import jakarta.validation.Valid;
 

@@ -1,4 +1,4 @@
-package com.example.kafka;
+package com.example.infrastructure.config;
 
 import java.util.Map;
 

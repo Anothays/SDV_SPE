@@ -9,11 +9,11 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.example.application.dto.ProfilDto;
 import com.example.domain.OutboxEventToPublish;
-import com.example.dto.ProfilDto;
+import com.example.infrastructure.adapter.out.outbox.OutboxEvent;
 import com.example.infrastructure.adapter.out.outbox.OutboxEventPublisherAdapter;
-import com.example.outbox.OutboxEvent;
-import com.example.outbox.OutboxEventRepository;
+import com.example.infrastructure.adapter.out.outbox.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class OutboxEventPublisherAdapterTest {

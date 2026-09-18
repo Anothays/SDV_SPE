@@ -1,9 +1,10 @@
-package com.example.kafka;
+package com.example.infrastructure.adapter.in.kafka;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import com.example.dto.TelemetryEventDto;
+import com.example.application.dto.TelemetryEventDto;
+import com.example.infrastructure.config.KafkaTopicConfig;
 
 import io.micrometer.core.instrument.MeterRegistry;
 

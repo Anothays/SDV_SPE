@@ -1,4 +1,4 @@
-package com.example.MaDemo.kafka;
+package com.example.MaDemo.infrastructure.adapter.in.kafka;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import com.example.application.ProfilService;
 import com.example.domain.Profil;
 import com.example.domain.port.out.ProfilPort;
-import com.example.dto.ProfilDto;
+import com.example.application.dto.ProfilDto;
 import com.example.exception.ProfilNotFoundException;
 
 class ProfilServiceTest {

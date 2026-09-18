@@ -2,7 +2,7 @@ package com.example.application;
 
 import com.example.domain.Profil;
 import com.example.domain.port.out.ProfilPort;
-import com.example.dto.ProfilDto;
+import com.example.application.dto.ProfilDto;
 import com.example.exception.ProfilNotFoundException;
 
 public class ProfilService {
