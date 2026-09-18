@@ -6,17 +6,18 @@ on:
       test_plan:
         description: 'Test plan to run'
         required: true
-        default: 'profil-api-load-test'
+        default: 'auth-register-load-test'
         type: choice
         options:
-          - profil-api-load-test
-          - profil-api-stress-test
+          - auth-register-load-test
+          - auth-register-stress-test
   push:
     branches:
       - main
     paths:
-      - 'profil-service/src/**'
-      - 'load-testing/jmeter/test-plans/**'
+      - 'service-sso/src/**'
+      - 'service-role-manager/src/**'
+      - 'service-load-testing/jmeter/test-plans/**'
 
 jobs:
   performance-tests:
@@ -32,32 +33,34 @@ jobs:
 
       - name: Start application stack
         run: |
-          docker compose up -d --build app db prometheus grafana alertmanager
-          echo "Waiting for application to be ready..."
+          docker compose up -d --build sso role-manager db kafka kafka-connect kafka-connect-init prometheus grafana alertmanager
+          echo "Waiting for services to be ready..."
 
-      - name: Wait for app to be healthy
+      - name: Wait for sso and role-manager to be healthy
         run: |
-          for i in $(seq 1 30); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo "000")
-            if [ "$STATUS" = "200" ]; then
-              echo "App is healthy after ${i}*5 seconds"
-              break
-            fi
-            echo "Attempt $i: status=$STATUS, waiting 5s..."
-            sleep 5
+          for port in 8082 8080; do
+            for i in $(seq 1 30); do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${port}/actuator/health || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "Service on port ${port} is healthy after ${i}*5 seconds"
+                break
+              fi
+              echo "Attempt $i (port ${port}): status=$STATUS, waiting 5s..."
+              sleep 5
+            done
+            curl -f http://localhost:${port}/actuator/health || (echo "Service on port ${port} did not start in time" && docker compose logs sso role-manager && exit 1)
           done
-          curl -f http://localhost:8080/actuator/health || (echo "App did not start in time" && docker compose logs app && exit 1)
 
       - name: Build JMeter Docker image
         run: docker compose build jmeter
 
       - name: Run JMeter load test
         run: |
-          TEST_PLAN="${{ github.event.inputs.test_plan || 'profil-api-load-test' }}"
+          TEST_PLAN="${{ github.event.inputs.test_plan || 'auth-register-load-test' }}"
           echo "Running test plan: ${TEST_PLAN}.jmx"
           docker compose --profile testing run --rm \
             -e TEST_PLAN="${TEST_PLAN}.jmx" \
-            -e JMETER_EXTRA_ARGS="-Jhost=app -Jport=8080" \
+            -e JMETER_EXTRA_ARGS="-Jhost=sso -Jport=8082" \
             jmeter
 
       - name: Upload JTL results
@@ -65,7 +68,7 @@ jobs:
         if: always()
         with:
           name: jmeter-jtl-${{ github.run_number }}
-          path: load-testing/jmeter/results/*.jtl
+          path: service-load-testing/jmeter/results/*.jtl
           retention-days: 30
 
       - name: Upload HTML report
@@ -73,13 +76,13 @@ jobs:
         if: always()
         with:
           name: jmeter-report-${{ github.run_number }}
-          path: load-testing/jmeter/reports/
+          path: service-load-testing/jmeter/reports/
           retention-days: 30
 
       - name: Check error rate threshold
         run: |
-          TEST_PLAN="${{ github.event.inputs.test_plan || 'profil-api-load-test' }}"
-          JTL_FILE="load-testing/jmeter/results/${TEST_PLAN}-result.jtl"
+          TEST_PLAN="${{ github.event.inputs.test_plan || 'auth-register-load-test' }}"
+          JTL_FILE="service-load-testing/jmeter/results/${TEST_PLAN}-result.jtl"
           if [ -f "$JTL_FILE" ]; then
             TOTAL=$(tail -n +2 "$JTL_FILE" | wc -l)
             ERRORS=$(tail -n +2 "$JTL_FILE" | awk -F',' '{if($8=="false") count++} END {print count+0}')

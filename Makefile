@@ -12,11 +12,11 @@ down: ## Arrête et supprime les containers
 logs: ## Suit les logs de role-manager et sso
 	docker compose logs -f role-manager sso
 
-load-test: ## Lance le test de charge JMeter (50 users / 60s)
+load-test: ## Lance le test de charge JMeter sur POST /auth/register (50 users / 60s)
 	docker compose --profile testing run --rm jmeter
 
-stress-test: ## Lance le test de stress JMeter (10 -> 200 users)
-	TEST_PLAN=profil-api-stress-test.jmx docker compose --profile testing run --rm jmeter
+stress-test: ## Lance le test de stress JMeter sur POST /auth/register (10 -> 200 users)
+	TEST_PLAN=auth-register-stress-test.jmx docker compose --profile testing run --rm jmeter
 
 telemetry-test: ## Lance le stress test de télémétrie (100 users -> Kafka)
 	TEST_PLAN=telemetry-stress-test.jmx docker compose --profile testing run --rm jmeter

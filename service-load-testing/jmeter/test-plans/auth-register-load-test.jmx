@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Profil API - Load Test" enabled="true">
-      <stringProp name="TestPlan.comments">Load test: 50 users, ramp-up 15s, duration 60s - POST /api/profils only</stringProp>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Auth Register - Load Test" enabled="true">
+      <stringProp name="TestPlan.comments">Load test: 50 users, ramp-up 15s, duration 60s - POST /auth/register (sso) only</stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -10,12 +10,12 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="APP_HOST" elementType="Argument">
             <stringProp name="Argument.name">APP_HOST</stringProp>
-            <stringProp name="Argument.value">${__P(host,app)}</stringProp>
+            <stringProp name="Argument.value">${__P(host,sso)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="APP_PORT" elementType="Argument">
             <stringProp name="Argument.name">APP_PORT</stringProp>
-            <stringProp name="Argument.value">${__P(port,8080)}</stringProp>
+            <stringProp name="Argument.value">${__P(port,8082)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
         </collectionProp>
@@ -56,20 +56,20 @@
         </ConfigTestElement>
         <hashTree/>
 
-        <!-- ===================== REQUEST: POST /api/profils ===================== -->
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/profils" enabled="true">
+        <!-- ===================== REQUEST: POST /auth/register ===================== -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /auth/register" enabled="true">
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"name": "LoadTestProfil-${__threadNum}-${__Random(1000,9999)}"}</stringProp>
+                <stringProp name="Argument.value">{"username":"u${__time(/1000)}x${__counter(FALSE,)}","email":"e${__time(/1000)}x${__counter(FALSE,)}@example.com","password":"password123","region":"EU"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
                 <boolProp name="HTTPArgument.use_equals">true</boolProp>
                 <stringProp name="Argument.name"></stringProp>
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="HTTPSampler.path">/api/profils</stringProp>
+          <stringProp name="HTTPSampler.path">/auth/register</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -82,19 +82,14 @@
                 <stringProp name="Header.name">Content-Type</stringProp>
                 <stringProp name="Header.value">application/json</stringProp>
               </elementProp>
-              <!-- Basic auth: ali:password123 -->
-              <elementProp name="" elementType="Header">
-                <stringProp name="Header.name">Authorization</stringProp>
-                <stringProp name="Header.value">Basic YWxpOnBhc3N3b3JkMTIz</stringProp>
-              </elementProp>
             </collectionProp>
           </HeaderManager>
           <hashTree/>
           <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert HTTP 200" enabled="true">
             <collectionProp name="Asserion.test_strings">
-              <stringProp name="50">200</stringProp>
+              <stringProp name="49587">201</stringProp>
             </collectionProp>
-            <stringProp name="Assertion.custom_message">Expected HTTP 200 on POST /api/profils</stringProp>
+            <stringProp name="Assertion.custom_message">Expected HTTP 201 on POST /auth/register</stringProp>
             <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">8</intProp>
@@ -156,7 +151,7 @@
               </elementProp>
               <elementProp name="application" elementType="Argument">
                 <stringProp name="Argument.name">application</stringProp>
-                <stringProp name="Argument.value">MaDemo</stringProp>
+                <stringProp name="Argument.value">nebula</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="measurement" elementType="Argument">
@@ -181,7 +176,7 @@
               </elementProp>
               <elementProp name="testTitle" elementType="Argument">
                 <stringProp name="Argument.name">testTitle</stringProp>
-                <stringProp name="Argument.value">Profil API Load Test</stringProp>
+                <stringProp name="Argument.value">Auth Register Load Test</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="eventTags" elementType="Argument">

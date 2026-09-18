@@ -1,9 +1,9 @@
 #!/bin/sh
-# Exécute un plan JMeter choisi via TEST_PLAN (défaut : profil-api-load-test.jmx).
+# Exécute un plan JMeter choisi via TEST_PLAN (défaut : auth-register-load-test.jmx).
 # Résultats et rapports nommés d'après le plan pour ne pas s'écraser entre eux.
 set -e
 
-TEST_PLAN="${TEST_PLAN:-profil-api-load-test.jmx}"
+TEST_PLAN="${TEST_PLAN:-auth-register-load-test.jmx}"
 NAME="${TEST_PLAN%.jmx}"
 RESULT="/results/${NAME}-result.jtl"
 REPORT="/reports/${NAME}"

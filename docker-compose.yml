@@ -201,7 +201,7 @@ services:
     image: justb4/jmeter:latest
     entrypoint: [ "/bin/sh", "/scripts/run-test.sh" ]
     environment:
-      TEST_PLAN: ${TEST_PLAN:-profil-api-load-test.jmx}
+      TEST_PLAN: ${TEST_PLAN:-auth-register-load-test.jmx}
     volumes:
       - ./service-load-testing/jmeter/run-test.sh:/scripts/run-test.sh:ro
       - ./service-load-testing/jmeter/test-plans:/test-plans
@@ -209,6 +209,7 @@ services:
       - ./service-load-testing/jmeter/reports:/reports
     depends_on:
       - role-manager
+      - sso
       - influxdb
     networks:
       - monitoring-net

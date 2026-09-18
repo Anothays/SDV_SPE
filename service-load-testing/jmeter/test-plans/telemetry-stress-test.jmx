@@ -10,7 +10,7 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="APP_HOST" elementType="Argument">
             <stringProp name="Argument.name">APP_HOST</stringProp>
-            <stringProp name="Argument.value">${__P(host,app)}</stringProp>
+            <stringProp name="Argument.value">${__P(host,role-manager)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="APP_PORT" elementType="Argument">
@@ -156,7 +156,7 @@
               </elementProp>
               <elementProp name="application" elementType="Argument">
                 <stringProp name="Argument.name">application</stringProp>
-                <stringProp name="Argument.value">MaDemo</stringProp>
+                <stringProp name="Argument.value">nebula</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="measurement" elementType="Argument">
