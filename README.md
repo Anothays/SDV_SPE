@@ -1,6 +1,6 @@
-# MaDemo — Monitoring & Observabilité
+# Nebula — Monitoring & Observabilité
 
-API REST Spring Boot avec une stack de monitoring complète : Prometheus, Grafana, JMeter et InfluxDB, le tout orchestré via Docker Compose.
+Deux services REST Spring Boot (`sso`, `role-manager`) reliés par Kafka (outbox + Debezium CDC), avec une stack de monitoring complète : Prometheus, Grafana, JMeter et InfluxDB, le tout orchestré via Docker Compose.
 
 ---
 
@@ -21,15 +21,15 @@ API REST Spring Boot avec une stack de monitoring complète : Prometheus, Grafan
 
 ## Base de données MySQL
 
-L'application se connecte à une base MySQL 8 dont les credentials sont définis dans `profil-service/src/main/resources/application.properties` :
+Chaque service se connecte à sa propre base MySQL 8 (`role_manager`, `sso`). Exemple pour `service-role-manager/src/main/resources/application.properties` :
 
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/maBase
+spring.datasource.url=jdbc:mysql://localhost:3306/role_manager
 spring.datasource.username=devuser
 spring.datasource.password=devpassword
 ```
 
-En environnement Docker, ces valeurs sont surchargées par les variables d'environnement du service `app` dans `docker-compose.yml`.
+En environnement Docker, ces valeurs sont surchargées par les variables d'environnement des services `role-manager` et `sso` dans `docker-compose.yml`.
 
 Le pool de connexions HikariCP est configuré avec 10 connexions max et 2 connexions minimum en veille.
 
@@ -56,9 +56,13 @@ Prometheus scrape l'endpoint toutes les 15 secondes (`prometheus.yml`) :
 
 ```yaml
 scrape_configs:
-  - job_name: 'spring-boot-app'
+  - job_name: 'role-manager'
     static_configs:
-      - targets: ['app:8080']
+      - targets: ['role-manager:8080']
+    metrics_path: '/actuator/prometheus'
+  - job_name: 'sso'
+    static_configs:
+      - targets: ['sso:8082']
     metrics_path: '/actuator/prometheus'
 ```
 
@@ -76,7 +80,7 @@ Grafana se connecte à Prometheus pour visualiser les métriques en temps réel.
 
 **Division du travail** : Prometheus détecte (évalue les règles PromQL), Alertmanager notifie (déduplique, groupe, route vers Discord).
 
-### Règles d'alerte (`monitoring-service/prometheus/alert-rules.yml`)
+### Règles d'alerte (`service-monitoring/prometheus/alert-rules.yml`)
 
 | Alerte | Condition | Durée | Sévérité |
 |--------|-----------|-------|----------|
@@ -89,13 +93,13 @@ Le calcul du p99 nécessite les buckets d'histogramme, activés dans `applicatio
 
 ### Notifications Discord
 
-Alertmanager route toutes les alertes vers un webhook Discord (`monitoring-service/alertmanager/alertmanager.yml`). L'URL du webhook est lue depuis `monitoring-service/alertmanager/discord_webhook_url` — fichier **gitignoré** (secret), monté dans le container. La résolution d'une alerte est aussi notifiée (`send_resolved`).
+Alertmanager route toutes les alertes vers un webhook Discord (`service-monitoring/alertmanager/alertmanager.yml`). L'URL du webhook est lue depuis `service-monitoring/alertmanager/discord_webhook_url` — fichier **gitignoré** (secret), monté dans le container. La résolution d'une alerte est aussi notifiée (`send_resolved`).
 
 ### Tester la chaîne
 
 ```bash
-docker stop app      # après ~1 min : alerte AppDown sur Discord
-docker start app     # notification "resolved"
+docker stop role-manager   # après ~1 min : alerte AppDown sur Discord (idem avec `sso`)
+docker start role-manager  # notification "resolved"
 ```
 
 UI de contrôle : http://localhost:9090/alerts (état des règles) · http://localhost:9093 (Alertmanager).
@@ -108,7 +112,8 @@ Deux familles d'événements implémentées, aux caractéristiques volontairemen
 
 | Topic | Famille | Partitions | Rétention | Clé |
 |-------|---------|-----------|-----------|-----|
-| `players.profil.created` | **Fait métier** — chaque message compte | 1 | défaut (7 j) | id du profil |
+| `players.registered` | **Fait métier** — chaque message compte | 3 | 7 j | playerId |
+| `access.role.assigned` | **Fait métier** — chaque message compte | 3 | 7 j | playerId |
 | `telemetry.player.action` | **Télémétrie** — fort volume, valeur individuelle faible | 6 | 24 h | playerId |
 
 (3ᵉ famille — **état courant**, topic compacté — décrite dans `documents/ARCHITECTURE.md` §9, non implémentée.)
@@ -116,15 +121,23 @@ Deux familles d'événements implémentées, aux caractéristiques volontairemen
 ### Flux 1 — fait métier
 
 ```
-POST /api/profils
+POST /auth/register (sso)
       │
       ▼
-ProfilService.saveProfil()
-      ├── 1. Sauvegarde MySQL (synchrone)
-      └── 2. Publication de l'événement sur le topic `players.profil.created` (asynchrone)
+RegisterUseCase.execute()
+      └── une transaction : account(role=PLAYER) + outbox(players.registered) → 201 + JWT{role=PLAYER}
                     │
-                    ▼
-            ProfilEventConsumer (@KafkaListener, groupe `mademo`)
+                    ▼  Debezium (sso-outbox-connector) → topic `players.registered`
+            PlayerRegisteredConsumer (role-manager, @KafkaListener, groupe `role-manager`)
+                    └── AssignDefaultRoleUseCase : une transaction : role_assignment(PLAYER) + outbox(access.role.assigned)
+                                  │
+                                  ▼  Debezium (role-manager-outbox-connector) → topic `access.role.assigned`
+                          RoleAssignedConsumer (sso, @KafkaListener, groupe `sso`)
+                                  └── ApplyRoleAssignmentUseCase : met à jour account.role
+                                      → claim `role` du JWT au prochain POST /auth/login
+
+PUT /api/roles/{playerId} {"role":"MODERATOR"} (role-manager, Basic admin)
+      └── ChangeRoleUseCase : même chemin outbox → Debezium → `access.role.assigned` → sso
 ```
 
 ### Flux 2 — télémétrie
@@ -136,7 +149,7 @@ POST /api/telemetry  ──► 202 Accepted immédiat (fire-and-forget, aucune �
 topic telemetry.player.action (6 partitions)
       │
       ▼
-TelemetryEventConsumer (groupe `mademo-telemetry`, concurrency 3)
+TelemetryEventConsumer (role-manager, groupe `role-manager-telemetry`, concurrency 3)
       └── agrège en compteurs Micrometer `telemetry_player_actions_total{action=...}`
           → visibles dans Prometheus/Grafana
 ```
@@ -146,7 +159,7 @@ TelemetryEventConsumer (groupe `mademo-telemetry`, concurrency 3)
 | Classe | Rôle |
 |--------|------|
 | `kafka/KafkaTopicConfig` | Déclare les topics (partitions, rétention) |
-| `kafka/ProfilEventProducer` / `ProfilEventConsumer` | Fait métier : publication + journalisation |
+| `PlayerRegisteredConsumer` (role-manager) / `RoleAssignedConsumer` (sso) | Fait métier : consommation idempotente, retries + DLT (`players.registered.dlt`, `access.role.assigned.dlt`) ; publication via outbox + Debezium |
 | `kafka/TelemetryEventProducer` / `TelemetryEventConsumer` | Télémétrie : publication fire-and-forget + agrégation Micrometer |
 | `controller/TelemetryController` | Endpoint d'ingestion `POST /api/telemetry` (202) |
 
@@ -158,7 +171,7 @@ Kafka tourne en mode **KRaft** (sans Zookeeper) dans Docker Compose, avec deux l
 - `kafka:9092` — accès interne pour les containers du réseau `monitoring-net`
 - `localhost:9094` — accès depuis la machine hôte (développement local)
 
-En Docker, l'app utilise `SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092` ; en local, `spring.kafka.bootstrap-servers=localhost:9094` (application.properties).
+En Docker, les services utilisent `SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092` ; en local, `spring.kafka.bootstrap-servers=localhost:9094` (application.properties).
 
 ### Observabilité
 
@@ -180,20 +193,20 @@ Les volumes permettent de persister des données ou d'injecter de la configurati
 
 > **Note** : les données MySQL ne sont volontairement **pas persistées** (pas de volume sur `/var/lib/mysql`) — chaque `docker compose down` repart d'une base vide, ce qui garantit des tests reproductibles.
 
-#### `./monitoring-service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml`
+#### `./service-monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml`
 Injecte la configuration de scraping dans Prometheus. Permet de modifier les cibles sans reconstruire l'image.
 
 #### `prometheus_data:/prometheus`
 Volume Docker nommé qui persiste la base de données time-series de Prometheus entre les redémarrages.
 
-#### `./monitoring-service/grafana/provisioning:/etc/grafana/provisioning`
+#### `./service-monitoring/grafana/provisioning:/etc/grafana/provisioning`
 Permet à Grafana de **charger automatiquement** les datasources et les dashboards au démarrage, sans action manuelle dans l'UI.
 
 Ce dossier contient deux sous-dossiers :
 - `datasources/` — fichiers YAML déclarant les sources de données (Prometheus, InfluxDB)
 - `dashboards/` — fichier YAML indiquant à Grafana où trouver les fichiers JSON des dashboards
 
-#### `./monitoring-service/grafana/dashboards:/var/lib/grafana/dashboards`
+#### `./service-monitoring/grafana/dashboards:/var/lib/grafana/dashboards`
 Contient les fichiers JSON des dashboards Grafana. Tout fichier `.json` déposé ici est automatiquement importé au démarrage via le provisioning. Cela permet de **versionner les dashboards dans Git** et de les déployer sans intervention manuelle.
 
 Dashboards disponibles :
@@ -203,10 +216,10 @@ Dashboards disponibles :
 - `kafka-client-metrics.json` — métriques client Kafka (producteur/consommateur) de l'application
 
 #### Volumes JMeter
-- `./load-testing/jmeter/run-test.sh:/scripts/run-test.sh` — script d'exécution des tests (versionné)
-- `./load-testing/jmeter/test-plans:/test-plans` — plans de test `.jmx`
-- `./load-testing/jmeter/results:/results` — fichiers de résultats `.jtl`
-- `./load-testing/jmeter/reports:/reports` — rapports HTML générés après chaque test
+- `./service-load-testing/jmeter/run-test.sh:/scripts/run-test.sh` — script d'exécution des tests (versionné)
+- `./service-load-testing/jmeter/test-plans:/test-plans` — plans de test `.jmx`
+- `./service-load-testing/jmeter/results:/results` — fichiers de résultats `.jtl`
+- `./service-load-testing/jmeter/reports:/reports` — rapports HTML générés après chaque test
 
 ---
 
@@ -214,7 +227,7 @@ Dashboards disponibles :
 
 JMeter est intégré comme service Docker (profil `testing`) et envoie ses métriques en temps réel vers InfluxDB, visualisables dans Grafana.
 
-### Test de charge — `profil-api-load-test.jmx`
+### Test de charge — `auth-register-load-test.jmx`
 
 Simule une **charge normale et soutenue** sur l'API.
 
@@ -223,11 +236,12 @@ Simule une **charge normale et soutenue** sur l'API.
 | Utilisateurs simultanés | 50 |
 | Montée en charge | 15 secondes |
 | Durée totale | 60 secondes |
-| Endpoint testé | `POST /api/profils` |
+| Endpoint testé | `POST /auth/register` (`sso:8082`) |
+| Assertion | HTTP 201 |
 
-**Objectif** : vérifier que l'application tient une charge réaliste sans dégradation des temps de réponse.
+**Objectif** : vérifier que l'application tient une charge réaliste sans dégradation des temps de réponse. Chaque requête exerce toute la chaîne sso → outbox → Debezium → role-manager.
 
-### Test de stress — `profil-api-stress-test.jmx`
+### Test de stress — `auth-register-stress-test.jmx`
 
 Simule une **montée progressive en charge** pour identifier le point de rupture de l'application.
 
@@ -254,7 +268,7 @@ Bombarde l'endpoint d'ingestion `POST /api/telemetry` (fire-and-forget vers Kafk
 
 ### Lancer les tests
 
-La logique d'exécution est dans `load-testing/jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `profil-api-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
+La logique d'exécution est dans `service-load-testing/jmeter/run-test.sh` (monté dans le container, versionné). Le plan est choisi via la variable `TEST_PLAN` (défaut : `auth-register-load-test.jmx`) ; résultats et rapports sont nommés d'après le plan, donc load et stress ne s'écrasent pas.
 
 ```bash
 # Via le Makefile (recommandé)
@@ -264,7 +278,7 @@ make telemetry-test
 
 # Équivalent docker compose
 docker compose --profile testing run --rm jmeter
-TEST_PLAN=profil-api-stress-test.jmx docker compose --profile testing run --rm jmeter
+TEST_PLAN=auth-register-stress-test.jmx docker compose --profile testing run --rm jmeter
 TEST_PLAN=telemetry-stress-test.jmx docker compose --profile testing run --rm jmeter
 ```
 
@@ -278,13 +292,13 @@ Autres cibles : `make setup`, `make down`, `make logs`, `make help`.
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Docker Network                           │
 │                                                                 │
-│  ┌──────────┐   JDBC    ┌──────────┐                           │
-│  │  app     │ ────────► │  MySQL   │                           │
-│  │ :8080    │           │  :3306   │                           │
-│  └────┬─────┘           └──────────┘                           │
-│       │                                                         │
-│       │ /actuator/prometheus (scrape 15s)                       │
-│       ▼                                                         │
+│  ┌──────────┐   JDBC    ┌──────────┐    JDBC   ┌────────────┐  │
+│  │   sso    │ ────────► │  MySQL   │ ◄──────── │role-manager│  │
+│  │ :8082    │           │  :3306   │           │   :8080    │  │
+│  └────┬─────┘           └──────────┘           └─────┬──────┘  │
+│       │                                              │          │
+│       │ /actuator/prometheus (scrape 15s)            │          │
+│       ▼  ◄───────────────────────────────────────────┘          │
 │  ┌──────────┐           ┌──────────┐                           │
 │  │Prometheus│ ────────► │ Grafana  │                           │
 │  │  :9090   │  datasrc  │  :3000   │                           │
@@ -309,16 +323,16 @@ Autres cibles : `make setup`, `make down`, `make logs`, `make help`.
 ### Améliorations prioritaires
 
 - [x] **Intégrer le test de stress dans le service JMeter** du `docker-compose.yml`
-  Le plan de test est piloté par la variable d'environnement `TEST_PLAN` (défaut : `profil-api-load-test.jmx`), permettant de lancer `profil-api-stress-test.jmx` à la demande sans dupliquer le service.
+  Le plan de test est piloté par la variable d'environnement `TEST_PLAN` (défaut : `auth-register-load-test.jmx`), permettant de lancer `auth-register-stress-test.jmx` à la demande sans dupliquer le service.
 
 ### Métriques fonctionnelles
 
 - [ ] **Implémenter des métriques métier** avec Micrometer
   Au-delà des métriques techniques JVM, il est possible d'instrumenter le code métier :
   ```java
-  // Exemple : compter le nombre de profils créés
-  Counter.builder("profils.created.total")
-      .description("Nombre de profils créés")
+  // Exemple : compter le nombre de rôles attribués
+  Counter.builder("roles.assigned.total")
+      .description("Nombre de rôles attribués")
       .register(meterRegistry)
       .increment();
   ```
@@ -327,22 +341,24 @@ Autres cibles : `make setup`, `make down`, `make logs`, `make help`.
 ### Messaging
 
 - [x] **Intégrer Kafka** (voir section [Messaging avec Kafka](#messaging-avec-kafka))
-  Événement `players.profil.created` publié à chaque création de profil, consommé par un `@KafkaListener`. Métriques client exposées via Micrometer/Prometheus et visualisées dans le dashboard Grafana dédié.
+  Événements `players.registered` et `access.role.assigned` publiés via outbox + Debezium, consommés par des `@KafkaListener` idempotents. Métriques client exposées via Micrometer/Prometheus et visualisées dans le dashboard Grafana dédié.
   Choix de Kafka plutôt que RabbitMQ : adapté aux flux à fort volume et à l'event sourcing, cohérent avec la vision plateforme de jeu (télémétrie joueurs, événements de matchs).
 
 ### Autres
 
 - [x] Configurer les règles d'alerting dans Alertmanager (voir section [Alerting](#alerting-avec-prometheus--alertmanager))
-- [ ] Ajouter un healthcheck sur le service `app` dans `docker-compose.yml` pour que Prometheus ne démarre qu'une fois Spring Boot prêt
+- [ ] Ajouter un healthcheck sur les services `sso` et `role-manager` dans `docker-compose.yml` pour que Prometheus ne démarre qu'une fois Spring Boot prêt
 - [ ] Persister les données InfluxDB avec un volume Docker
 
 ---
 
-## Flux inscription (plan 1)
+## Flux inscription et rôles (plans 1 et 3)
 
-Inscription → `players.registered` → création du profil en réaction (chorégraphie,
-aucun appel HTTP inter-services). Détails : `docs/superpowers/specs/2026-07-18-nebula-architecture-design.md`.
+Inscription → `players.registered` → attribution du rôle `PLAYER` en réaction → `access.role.assigned` →
+projection du rôle dans `sso` (claim `role` du JWT). Chorégraphie, aucun appel HTTP inter-services.
+Détails : `docs/superpowers/specs/2026-07-18-nebula-architecture-design.md` et
+`docs/superpowers/specs/2026-09-18-sso-role-manager.md`.
 
-- Service Identité : http://localhost:8082 (`POST /auth/register`, `POST /auth/login`)
-- Service Profil : http://localhost:8080 (`GET/PUT /api/profils/{playerId}`)
+- Service SSO : http://localhost:8082 (`POST /auth/register`, `POST /auth/login`)
+- Service Role Manager : http://localhost:8080 (`GET/PUT /api/roles/{playerId}`, `POST /api/telemetry`)
 - Démo rapide : voir `docs/superpowers/plans/2026-07-18-plan-1-socle-flux-inscription.md`, Task 12.
