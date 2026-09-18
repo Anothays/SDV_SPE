@@ -84,12 +84,12 @@ Docker Compose, Prometheus/Grafana, JMeter.
 
 **Interfaces:** aucune.
 
-- [ ] **Step 1: Vérifier l'état réel**
+- [x] **Step 1: Vérifier l'état réel**
 
 Run: `git status --short` → les trois fichiers ci-dessus en `M`. Si
 l'utilisateur les a déjà committés, passer à la Task 1.
 
-- [ ] **Step 2: Deux commits séparés**
+- [x] **Step 2: Deux commits séparés**
 
 ```bash
 git add service-messaging/debezium/identite-outbox-connector.json service-messaging/debezium/profil-outbox-connector.json
@@ -119,7 +119,7 @@ git commit -m "docs: mark plan-1 tasks as completed"
   comportement identique (mêmes endpoints `/auth/register`, `/auth/login`,
   même JWT, même outbox).
 
-- [ ] **Step 1: Déplacer avec git mv**
+- [x] **Step 1: Déplacer avec git mv**
 
 ```bash
 git mv service-identite service-sso
@@ -132,7 +132,7 @@ git mv service-sso/src/test/java/com/nebula/sso/IdentiteApplicationTests.java se
 Supprimer `service-sso/target/` s'il existe (artefacts obsolètes,
 ignorés par git).
 
-- [ ] **Step 2: Remplacer les identifiants dans le module uniquement**
+- [x] **Step 2: Remplacer les identifiants dans le module uniquement**
 
 ```bash
 grep -rl --exclude-dir=target 'com\.nebula\.identite\|IdentiteApplication' service-sso | xargs sed -i 's/com\.nebula\.identite/com.nebula.sso/g; s/IdentiteApplication/SsoApplication/g'
@@ -147,18 +147,18 @@ Relire ensuite à la main les commentaires de
 Identité » (`JwtTokenAdapter`, `PlayerRegisteredEvent`) : remplacer par
 « service SSO ». Ne pas toucher `service-sso/CLAUDE.md` ici (Task 12).
 
-- [ ] **Step 3: Vérifier**
+- [x] **Step 3: Vérifier**
 
 Run: `cd service-sso && mvn test` → vert (mêmes tests qu'avant, renommés).
 Run: `grep -rn --exclude-dir=target 'identite' service-sso` → seules
 occurrences restantes : `service-sso/CLAUDE.md` (traité en Task 12).
 
-- [ ] **Step 4: hexagonal-boundary-guard**
+- [x] **Step 4: hexagonal-boundary-guard**
 
 Invoquer `hexagonal-boundary-guard` sur le diff. Attendu : « Aucun import
 interdit détecté » (renommage pur).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A service-identite service-sso
@@ -180,7 +180,7 @@ git commit -m "refactor(sso): rename service-identite module and package to serv
   (`topic.prefix=sso`, `schema-history.sso`), toujours routé vers
   `players.registered`.
 
-- [ ] **Step 1: docker-compose.yml**
+- [x] **Step 1: docker-compose.yml**
 
 Dans le bloc `identite:` : clé de service `sso:`, `container_name: "sso"`,
 `build: service-sso`, `SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sso`.
@@ -189,7 +189,7 @@ Volume `db` :
 Commentaire de `kafka-connect-init` : « (sso, profil) » (profil devient
 role-manager en Task 4).
 
-- [ ] **Step 2: SQL d'init et connecteur**
+- [x] **Step 2: SQL d'init et connecteur**
 
 ```bash
 git mv service-messaging/mysql-init/create-identite-db.sql service-messaging/mysql-init/create-sso-db.sql
@@ -201,13 +201,13 @@ sed -i 's/"database.include.list": "identite"/"database.include.list": "sso"/; s
 `database.server.id` (184056) inchangé. Relire le commentaire du SQL
 (« la base "sso" est créée ici »).
 
-- [ ] **Step 3: Vérifier**
+- [x] **Step 3: Vérifier**
 
 Run: `docker compose config -q && echo OK` → `OK`.
 Run: `grep -rn 'identite' docker-compose.yml service-messaging` → aucune
 ligne.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docker-compose.yml service-messaging
@@ -234,7 +234,7 @@ git commit -m "chore(sso): rename compose service, database and Debezium connect
   `com.nebula.rolemanager` (prod **et** tests), comportement encore
   identique (domaine profil intact jusqu'à la Phase C).
 
-- [ ] **Step 1: Déplacer avec git mv**
+- [x] **Step 1: Déplacer avec git mv**
 
 ```bash
 git mv service-profil service-role-manager
@@ -248,7 +248,7 @@ git mv service-role-manager/src/test/java/com/nebula/rolemanager/MaDemoApplicati
 
 Supprimer `service-role-manager/target/` s'il existe.
 
-- [ ] **Step 2: Remplacer les identifiants dans le module uniquement**
+- [x] **Step 2: Remplacer les identifiants dans le module uniquement**
 
 Ordre important : `com.example.MaDemo` avant `com.example`.
 
@@ -269,17 +269,17 @@ Groupes Kafka dans le code : `ProfilEventConsumer` `"mademo"` →
 `"role-manager-telemetry"`, `PlayerRegisteredConsumer` `"profil-service"`
 → `"role-manager"`.
 
-- [ ] **Step 3: Vérifier**
+- [x] **Step 3: Vérifier**
 
 Run: `cd service-role-manager && mvn test` → vert.
 Run: `grep -rn --exclude-dir=target -e 'com\.example' -e 'MaDemo' -e 'mademo' service-role-manager`
 → seules occurrences : `service-role-manager/CLAUDE.md` (Task 12).
 
-- [ ] **Step 4: hexagonal-boundary-guard**
+- [x] **Step 4: hexagonal-boundary-guard**
 
 Attendu : « Aucun import interdit détecté ».
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A service-profil service-role-manager
@@ -302,7 +302,7 @@ git commit -m "refactor(role-manager): rename service-profil module and packages
   (`topic.prefix=role-manager`), Prometheus scrape `role-manager:8080` **et**
   `sso:8082`, alerte `AppDown` couvrant les deux.
 
-- [ ] **Step 1: docker-compose.yml**
+- [x] **Step 1: docker-compose.yml**
 
 Bloc `app:` → `role-manager:`, `container_name: "role-manager"`,
 `build: service-role-manager`, `SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/role_manager`.
@@ -310,7 +310,7 @@ Bloc `app:` → `role-manager:`, `container_name: "role-manager"`,
 `jmeter.depends_on` : `app` → `role-manager`. Commentaire
 `kafka-connect-init` : « (sso, role-manager) ».
 
-- [ ] **Step 2: Connecteur Debezium**
+- [x] **Step 2: Connecteur Debezium**
 
 ```bash
 git mv service-messaging/debezium/profil-outbox-connector.json service-messaging/debezium/role-manager-outbox-connector.json
@@ -319,7 +319,7 @@ sed -i 's/"database.include.list": "maBase"/"database.include.list": "role_manag
 
 `database.server.id` (184055) inchangé.
 
-- [ ] **Step 3: Prometheus + alertes**
+- [x] **Step 3: Prometheus + alertes**
 
 `prometheus.yml` : remplacer le job `spring-boot-app` par deux jobs :
 
@@ -342,19 +342,19 @@ sed -i 's/"database.include.list": "maBase"/"database.include.list": "role_manag
 up{job=~"role-manager|sso"} == 0`. Les autres règles agrègent sans filtre
 de job : inchangées.
 
-- [ ] **Step 4: Makefile**
+- [x] **Step 4: Makefile**
 
 `logs: docker compose logs -f role-manager sso` (aide : « Suit les logs de
 role-manager et sso »).
 
-- [ ] **Step 5: Vérifier**
+- [x] **Step 5: Vérifier**
 
 Run: `docker compose config -q && echo OK` → `OK`.
 Run: `grep -rn -e 'maBase' -e '\bapp\b' -e 'profil' docker-compose.yml service-messaging service-monitoring/prometheus Makefile`
 → seules occurrences : cibles `load-test`/`stress-test` du Makefile
 (`profil-api-*.jmx`, traitées en Task 11).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docker-compose.yml service-messaging service-monitoring/prometheus Makefile
@@ -387,20 +387,20 @@ Préfixes utilisés ci-dessous : `RM=service-role-manager/src/main/java/com/nebu
   `findByPlayerId(String):Optional<RoleAssignment>`,
   `existsByPlayerId(String):boolean`.
 
-- [ ] **Step 1: Test qui échoue**
+- [x] **Step 1: Test qui échoue**
 
 `RoleAssignmentTest` : `defaultFor("uuid-1")` → `PLAYER`, `playerId`
 conservé ; setters/getters. Run
 `mvn test -Dtest=RoleAssignmentTest` → échoue (classes absentes).
 
-- [ ] **Step 2: Implémenter** les trois types (imports Java standard
+- [x] **Step 2: Implémenter** les trois types (imports Java standard
   uniquement).
 
-- [ ] **Step 3: Vérifier** → vert.
+- [x] **Step 3: Vérifier** → vert.
 
-- [ ] **Step 4: hexagonal-boundary-guard** → « Aucun import interdit ».
+- [x] **Step 4: hexagonal-boundary-guard** → « Aucun import interdit ».
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-role-manager/src/main/java/com/nebula/rolemanager/domain service-role-manager/src/test/java/com/nebula/rolemanager/domain/RoleAssignmentTest.java
@@ -430,20 +430,20 @@ git commit -m "feat(role-manager): add Role, RoleAssignment domain model and Rol
   (`@Repository`, mapping entité ↔ domaine privé à l'adapter ; sur `save`
   d'un objet déjà persisté, préserver `assignedAt`).
 
-- [ ] **Step 1: Test qui échoue** (`@SpringBootTest @Transactional`, modèle :
+- [x] **Step 1: Test qui échoue** (`@SpringBootTest @Transactional`, modèle :
   `ProfilJpaAdapterTest`) : save puis find (`assignedAt` non nul, rôle
   `PLAYER`), `existsByPlayerId` faux pour inconnu, update de rôle conserve
   `assignedAt` et pose `updatedAt`.
 
-- [ ] **Step 2: Implémenter** entité, repository, adapter.
+- [x] **Step 2: Implémenter** entité, repository, adapter.
 
-- [ ] **Step 3: Vérifier** → vert. (H2 `ddl-auto=create-drop` crée
+- [x] **Step 3: Vérifier** → vert. (H2 `ddl-auto=create-drop` crée
   `role_assignment` ; MySQL via `ddl-auto=update` en Docker.)
 
-- [ ] **Step 4: hexagonal-boundary-guard + spring-java-reviewer**
+- [x] **Step 4: hexagonal-boundary-guard + spring-java-reviewer**
   (aucune fuite de `RoleAssignmentEntity` hors de l'adapter).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-role-manager/src/main/java/com/nebula/rolemanager/infrastructure/adapter/out/persistence service-role-manager/src/test/java/com/nebula/rolemanager/infrastructure/adapter/out/persistence/RoleAssignmentJpaAdapterTest.java
@@ -491,7 +491,7 @@ git commit -m "feat(role-manager): persist role assignments behind RoleAssignmen
   `ChangeRoleRequest(@NotNull Role role)` (record, `jakarta.validation`
   autorisé en `application.dto` — déjà le cas de `TelemetryEventDto`).
 
-- [ ] **Step 1: Tests unitaires purs** (Mockito, modèle
+- [x] **Step 1: Tests unitaires purs** (Mockito, modèle
   `CreateProfilUseCaseTest`) : création `PLAYER` + capture de
   `OutboxEventToPublish` (`aggregateType=access.role.assigned`,
   `aggregateId=playerId`, payload `RoleAssignedEvent` avec
@@ -499,15 +499,15 @@ git commit -m "feat(role-manager): persist role assignments behind RoleAssignmen
   404 / succès + publication ; query 404 / succès ; `RoleAssignedEvent.from`
   remplit `eventId`/`occurredAt`. Run → échouent.
 
-- [ ] **Step 2: Implémenter** les classes ci-dessus.
+- [x] **Step 2: Implémenter** les classes ci-dessus.
 
-- [ ] **Step 3: Vérifier** → vert (les anciens tests profil restent verts
+- [x] **Step 3: Vérifier** → vert (les anciens tests profil restent verts
   aussi : rien n'est encore supprimé).
 
-- [ ] **Step 4: hexagonal-boundary-guard** (bloquant) +
+- [x] **Step 4: hexagonal-boundary-guard** (bloquant) +
   `spring-java-reviewer`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-role-manager/src/main/java/com/nebula/rolemanager/application service-role-manager/src/main/java/com/nebula/rolemanager/exception/RoleAssignmentNotFoundException.java service-role-manager/src/test/java/com/nebula/rolemanager/application
@@ -549,36 +549,36 @@ git commit -m "feat(role-manager): add role assignment use cases and access.role
   (`profilEventKafkaListenerContainerFactory` supprimée avec
   `ProfilEventConsumer`).
 
-- [ ] **Step 1: `RoleControllerIT` qui échoue** (modèle
+- [x] **Step 1: `RoleControllerIT` qui échoue** (modèle
   `ProfilControllerIT`, seed via `RoleAssignmentPort`) : GET 200 avec
   `$.role == "PLAYER"` ; GET 404 ; PUT en `admin` → 200 `$.role ==
   "MODERATOR"` ; PUT en `ali` → 403 ; PUT rôle inconnu `{"role":"KING"}`
   en `admin` → 400 ; POST `/api/roles/uuid-1` → 405 ; sans auth → 401.
 
-- [ ] **Step 2: Implémenter `RoleController`, adapter `SecurityConfig`,
+- [x] **Step 2: Implémenter `RoleController`, adapter `SecurityConfig`,
   `KafkaTopicConfig`, `UseCaseConfig`** (beans `AssignDefaultRoleUseCase`,
   `ChangeRoleUseCase`, `RoleAssignmentQueryService` ; beans profil
   retirés), rebrancher `PlayerRegisteredConsumer` sur
   `AssignDefaultRoleUseCase`.
 
-- [ ] **Step 3: Supprimer le domaine profil** (`git rm` des fichiers
+- [x] **Step 3: Supprimer le domaine profil** (`git rm` des fichiers
   listés), retirer la seconde factory de `KafkaConsumerConfig`.
 
-- [ ] **Step 4: Adapter `PlayerRegisteredFlowIT`** : injecter
+- [x] **Step 4: Adapter `PlayerRegisteredFlowIT`** : injecter
   `RoleAssignmentPort`, `validEventCreatesRoleAssignment` attend
   `existsByPlayerId("uuid-ok")` ; le test DLT inchangé.
 
-- [ ] **Step 5: Vérifier**
+- [x] **Step 5: Vérifier**
 
 Run: `cd service-role-manager && mvn test` → vert.
 Run: `grep -rni --exclude-dir=target 'profil' service-role-manager/src` →
 aucune ligne (les mentions restantes vivent dans `CLAUDE.md`, Task 12).
 
-- [ ] **Step 6: hexagonal-boundary-guard (bloquant) + spring-java-reviewer**
+- [x] **Step 6: hexagonal-boundary-guard (bloquant) + spring-java-reviewer**
   (`@Transactional` sur le controller/consumer seulement ; `hasRole` vs
   `roles("ADMIN")` cohérents ; idempotence du consumer).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A service-role-manager/src
@@ -612,18 +612,18 @@ Préfixes : `SS=service-sso/src/main/java/com/nebula/sso`,
   après retries) ; compte introuvable → log warn + return ; rôle identique
   → return (idempotence) ; sinon `account.setRole(role)` + `save`.
 
-- [ ] **Step 1: Tests unitaires qui échouent** : met à jour le rôle ;
+- [x] **Step 1: Tests unitaires qui échouent** : met à jour le rôle ;
   no-op si identique (`save` jamais appelé) ; ignore compte inconnu ;
   rejette `playerId`/`role` manquants. `AccountJpaAdapterTest` :
   `findById` présent/absent.
 
-- [ ] **Step 2: Implémenter** port, adapter, event, use case.
+- [x] **Step 2: Implémenter** port, adapter, event, use case.
 
-- [ ] **Step 3: Vérifier** → `cd service-sso && mvn test` vert.
+- [x] **Step 3: Vérifier** → `cd service-sso && mvn test` vert.
 
-- [ ] **Step 4: hexagonal-boundary-guard** (bloquant).
+- [x] **Step 4: hexagonal-boundary-guard** (bloquant).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add service-sso/src
@@ -658,13 +658,13 @@ git commit -m "feat(sso): apply role assignments from access.role.assigned event
   3 tentatives). Reprendre les deux commentaires explicatifs de l'original
   (blocage de partition sans `ErrorHandlingDeserializer`, DLT mono-partition).
 
-- [ ] **Step 1: Vérifier les dépendances de test**
+- [x] **Step 1: Vérifier les dépendances de test**
 
 `grep -n 'spring-kafka-test' service-sso/pom.xml` ; si absent, ajouter la
 dépendance (scope `test`) à côté de `spring-boot-starter-test`.
 Awaitility est fourni par `spring-boot-starter-test` (Boot ≥ 3.2).
 
-- [ ] **Step 2: `RoleAssignedFlowIT` qui échoue** (modèle
+- [x] **Step 2: `RoleAssignedFlowIT` qui échoue** (modèle
   `PlayerRegisteredFlowIT` : `@SpringBootTest @DirtiesContext
   @EmbeddedKafka(partitions=3, topics={"access.role.assigned",
   "access.role.assigned.dlt"})`, `auto-startup=true`) : seed un `Account`
@@ -672,15 +672,15 @@ Awaitility est fourni par `spring-boot-starter-test` (Boot ≥ 3.2).
   "MODERATOR")` → `await` jusqu'à `accountPort.findById(id).get().getRole()
   == "MODERATOR"` ; événement sans `playerId` → message sur le DLT.
 
-- [ ] **Step 3: Implémenter** consumer, configs, properties.
+- [x] **Step 3: Implémenter** consumer, configs, properties.
 
-- [ ] **Step 4: Vérifier** → `cd service-sso && mvn test` vert.
+- [x] **Step 4: Vérifier** → `cd service-sso && mvn test` vert.
 
-- [ ] **Step 5: hexagonal-boundary-guard + spring-java-reviewer**
+- [x] **Step 5: hexagonal-boundary-guard + spring-java-reviewer**
   (`@Transactional` sur le consumer ; factory correcte ; pas de bean
   `NewTopic` pour un topic non possédé).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add service-sso
@@ -710,7 +710,7 @@ git commit -m "feat(sso): consume access.role.assigned with retries and dead let
   **201**. Labels InfluxDB : `application=nebula`, `testTitle=Auth Register
   Load Test` / `Stress Test`.
 
-- [ ] **Step 1: Lire les contraintes de `RegisterRequest`**
+- [x] **Step 1: Lire les contraintes de `RegisterRequest`**
 
 `cat service-sso/src/main/java/com/nebula/sso/application/dto/RegisterRequest.java`
 → noter les `@Size`/`@Pattern` sur `username`/`email`. Choisir un
@@ -719,7 +719,7 @@ générateur d'unicité compatible (par défaut :
 un `@Pattern` interdit les chiffres en tête, préfixer d'une lettre — déjà
 le cas).
 
-- [ ] **Step 2: Renommer et éditer les plans**
+- [x] **Step 2: Renommer et éditer les plans**
 
 ```bash
 git mv service-load-testing/jmeter/test-plans/profil-api-load-test.jmx service-load-testing/jmeter/test-plans/auth-register-load-test.jmx
@@ -737,7 +737,7 @@ Test` → `Auth Register Load Test` (idem stress). Dans
 `telemetry-stress-test.jmx` : `${__P(host,app)}` → `${__P(host,role-manager)}`
 et `application` `MaDemo` → `nebula`.
 
-- [ ] **Step 3: run-test.sh, Makefile, compose**
+- [x] **Step 3: run-test.sh, Makefile, compose**
 
 `run-test.sh` : défaut `auth-register-load-test.jmx` (commentaire
 inclus). `Makefile` : `load-test` (défaut, aide « POST /auth/register, 50
@@ -745,7 +745,7 @@ users / 60s »), `stress-test: TEST_PLAN=auth-register-stress-test.jmx ...`.
 `docker-compose.yml` : `TEST_PLAN: ${TEST_PLAN:-auth-register-load-test.jmx}`,
 `jmeter.depends_on` : `role-manager`, `sso`, `influxdb`.
 
-- [ ] **Step 4: Workflow CI**
+- [x] **Step 4: Workflow CI**
 
 `performance-tests.yml` : options `auth-register-load-test` /
 `auth-register-stress-test` (défaut load) ; `paths` :
@@ -759,13 +759,13 @@ prometheus grafana alertmanager` ; attente santé sur
 `service-load-testing/jmeter/...` (les chemins `load-testing/` actuels sont
 obsolètes depuis le plan 1).
 
-- [ ] **Step 5: Vérifier**
+- [x] **Step 5: Vérifier**
 
 Run: `docker compose config -q && echo OK`.
 Run: `grep -rn -e 'profil' -e 'MaDemo' -e '\bapp\b' service-load-testing Makefile docker-compose.yml .github` → aucune ligne.
 Optionnel (stack up) : `make load-test` → 0 assertion en échec.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add service-load-testing Makefile docker-compose.yml .github/workflows/performance-tests.yml
@@ -787,15 +787,15 @@ git commit -m "chore(load-testing): retarget JMeter plans to POST /auth/register
 
 **Interfaces:** aucune — documentation.
 
-- [ ] **Step 1: Éditer** les fichiers listés (contenu court, factuel,
+- [x] **Step 1: Éditer** les fichiers listés (contenu court, factuel,
   aligné sur l'état réel du code après Task 11).
 
-- [ ] **Step 2: Vérifier zéro-résidu global**
+- [x] **Step 2: Vérifier zéro-résidu global**
 
 Run (commande des Global Constraints) → aucune ligne hors
 `docs/superpowers/` et `documents/`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add CLAUDE.md AGENTS.md .claude/rules .claude/agents .claude/skills service-sso/CLAUDE.md service-role-manager/CLAUDE.md
@@ -812,7 +812,7 @@ git commit -m "docs: update agent guidance for service-sso and service-role-mana
 
 **Interfaces:** aucune — documentation.
 
-- [ ] **Step 1: Invoquer l'agent `docs-sync`** sur le diff cumulé des
+- [x] **Step 1: Invoquer l'agent `docs-sync`** sur le diff cumulé des
   Tasks 1-11 avec les attentes suivantes :
   - §1 (tableau « Brique / État ») : événements implémentés =
     `players.registered`, `access.role.assigned`.
@@ -845,11 +845,11 @@ git commit -m "docs: update agent guidance for service-sso and service-role-mana
     commandes JMeter (`auth-register-*`), chemins `service-load-testing/`,
     mention Prometheus (`role-manager:8080`, `sso:8082`).
 
-- [ ] **Step 2: Revue rapide du diff proposé** (aucune section
+- [x] **Step 2: Revue rapide du diff proposé** (aucune section
   « cible » réécrite au-delà du nécessaire ; pas de PII dans les exemples
   d'événements).
 
-- [ ] **Step 3: Commit séparé**
+- [x] **Step 3: Commit séparé**
 
 ```bash
 git add documents/ARCHITECTURE.md README.md
@@ -866,14 +866,14 @@ git commit -m "docs: describe sso and role-manager split with access.role.assign
 
 **Interfaces:** aucune — vérification pure.
 
-- [ ] **Step 1: Stack et connecteurs**
+- [x] **Step 1: Stack et connecteurs**
 
 Invoquer `e2e-verifier` (ou skill `e2e-verify`) : `make setup` ;
 `curl -s localhost:8083/connectors` liste `sso-outbox-connector` et
 `role-manager-outbox-connector` (état `RUNNING` sur
 `/connectors/<name>/status`).
 
-- [ ] **Step 2: Scénario nominal**
+- [x] **Step 2: Scénario nominal**
 
 1. `POST localhost:8082/auth/register` → 201, décoder le JWT : claim
    `role=PLAYER`.
@@ -888,7 +888,7 @@ Invoquer `e2e-verifier` (ou skill `e2e-verify`) : `make setup` ;
 8. `make logs` sans boucle d'erreur (pas de rejeu serré Kafka, cf.
    commit 2e9586b) ; `make down` propre.
 
-- [ ] **Step 3: Correctif si nécessaire**
+- [x] **Step 3: Correctif si nécessaire**
 
 Régression → commit `fix:` dédié, rejouer le scénario. Tout conforme →
 ne rien committer : condition de clôture du plan.
