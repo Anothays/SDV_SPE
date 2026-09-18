@@ -66,7 +66,11 @@ class ProfilControllerIT {
 
     @Test
     void postCreateIsGone() throws Exception {
-        mockMvc.perform(post("/api/profils").with(httpBasic("ali", "password123"))
+        // POST sur /api/profils/{playerId} : le chemin matche (GET/PUT y sont
+        // mappés), donc Spring répond 405. Un POST sur /api/profils (sans id)
+        // ne matcherait aucun chemin du tout et répondrait 404, ce qui ne
+        // teste pas la bonne chose (absence de création directe, spec §5).
+        mockMvc.perform(post("/api/profils/uuid-1").with(httpBasic("ali", "password123"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"direct\"}"))
                 .andExpect(status().isMethodNotAllowed());
