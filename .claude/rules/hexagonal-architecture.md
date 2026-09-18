@@ -32,20 +32,25 @@ côté framework de ces ports, situées en `infrastructure`.
 
 ## État actuel de la migration
 
-`service-profil` est migré (plan
-`docs/superpowers/plans/2026-09-18-plan-2-hexagonal-migration.md`, Tasks
-1-6) : `com.example.domain` (`Profil`, `domain.port.out.ProfilPort`),
-`com.example.application` (`ProfilService`, `CreateProfilUseCase`),
+Les deux services sont hexagonaux (plan
+`docs/superpowers/plans/2026-09-18-plan-2-hexagonal-migration.md`).
+
+`service-profil` (Tasks 1-6) : `com.example.domain` (`Profil`,
+`domain.port.out.ProfilPort`), `com.example.application` (`ProfilService`,
+`CreateProfilUseCase`),
 `com.example.infrastructure.adapter.out.persistence.ProfilJpaAdapter`,
 `com.example.infrastructure.adapter.out.outbox.OutboxEventPublisherAdapter`,
 `com.example.infrastructure.adapter.in.web` / `...adapter.in.kafka`.
 
-`service-identite` reste à migrer (Phase B du plan) : il suit encore
-`controller → service → repository/entity`, avec dépendance directe des
-classes de service vers des types Spring/JPA/Kafka/Jackson concrets. Le
-pattern validé sur `service-profil` (port `domain.port.out`, adapter
-`infrastructure.adapter.out`, use case `application`) est le candidat
-naturel à répliquer.
+`service-identite` (Tasks 8-13) : `com.nebula.identite.domain` (`Account`,
+`domain.port.out.AccountPort`, `TokenPort`, `PasswordHasherPort`,
+`EventPublisherPort`), `com.nebula.identite.application`
+(`RegisterUseCase`, `LoginUseCase`),
+`com.nebula.identite.infrastructure.adapter.out.persistence.AccountJpaAdapter`,
+`com.nebula.identite.infrastructure.adapter.out.security`
+(`JwtTokenAdapter`, `BCryptPasswordHasherAdapter`),
+`com.nebula.identite.infrastructure.adapter.out.outbox.OutboxEventPublisherAdapter`,
+`com.nebula.identite.infrastructure.adapter.in.web.AuthController`.
 
 ## Attente de revue
 
