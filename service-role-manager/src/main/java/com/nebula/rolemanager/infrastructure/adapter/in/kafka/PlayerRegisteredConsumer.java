@@ -6,7 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.nebula.rolemanager.application.CreateProfilUseCase;
+import com.nebula.rolemanager.application.AssignDefaultRoleUseCase;
 import com.nebula.rolemanager.event.PlayerRegisteredEvent;
 import com.nebula.rolemanager.infrastructure.config.KafkaTopicConfig;
 
@@ -15,12 +15,13 @@ public class PlayerRegisteredConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(PlayerRegisteredConsumer.class);
 
-    private final CreateProfilUseCase createProfilUseCase;
+    private final AssignDefaultRoleUseCase assignDefaultRoleUseCase;
 
-    public PlayerRegisteredConsumer(CreateProfilUseCase createProfilUseCase) {
-        this.createProfilUseCase = createProfilUseCase;
+    public PlayerRegisteredConsumer(AssignDefaultRoleUseCase assignDefaultRoleUseCase) {
+        this.assignDefaultRoleUseCase = assignDefaultRoleUseCase;
     }
 
+    // Transaction portée ici : attribution + ligne outbox écrites atomiquement.
     @KafkaListener(topics = KafkaTopicConfig.PLAYERS_REGISTERED_TOPIC,
             groupId = "role-manager",
             containerFactory = "playerRegisteredKafkaListenerContainerFactory")
@@ -28,6 +29,6 @@ public class PlayerRegisteredConsumer {
     public void onPlayerRegistered(PlayerRegisteredEvent event) {
         log.info("Événement players.registered reçu : eventId={}, playerId={}",
                 event.eventId(), event.playerId());
-        createProfilUseCase.execute(event);
+        assignDefaultRoleUseCase.execute(event);
     }
 }

@@ -1,6 +1,7 @@
 package com.nebula.rolemanager.infrastructure.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import java.time.temporal.ChronoUnit;
 
@@ -62,9 +63,9 @@ class RoleAssignmentJpaAdapterTest {
                 .hasValueSatisfying(a -> {
                     assertThat(a.getId()).isEqualTo(created.getId());
                     assertThat(a.getRole()).isEqualTo(Role.MODERATOR);
-                    // La colonne tronque à la microseconde : comparer à cette précision.
-                    assertThat(a.getAssignedAt().truncatedTo(ChronoUnit.MICROS))
-                            .isEqualTo(created.getAssignedAt().truncatedTo(ChronoUnit.MICROS));
+                    // La colonne arrondit à la microseconde : tolérance d'une milliseconde.
+                    assertThat(a.getAssignedAt())
+                            .isCloseTo(created.getAssignedAt(), within(1, ChronoUnit.MILLIS));
                     assertThat(a.getUpdatedAt()).isNotNull();
                 });
     }

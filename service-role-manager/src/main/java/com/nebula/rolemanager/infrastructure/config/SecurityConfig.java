@@ -2,6 +2,7 @@ package com.nebula.rolemanager.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -11,6 +12,11 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+/**
+ * HTTP Basic + utilisateurs en mémoire : raccourci de démo assumé
+ * (ARCHITECTURE.md §10). La validation du JWT émis par service-sso est un
+ * suivi ultérieur (spec §5).
+ */
 @Configuration
 public class SecurityConfig {
 
@@ -21,7 +27,9 @@ public class SecurityConfig {
             // API REST → pas de session, pas de formulaire HTML
             .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**").permitAll()  // ← ajouter cette ligne
+                        .requestMatchers("/actuator/**").permitAll()
+                        // Changer un rôle est une action d'administration
+                        .requestMatchers(HttpMethod.PUT, "/api/roles/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )

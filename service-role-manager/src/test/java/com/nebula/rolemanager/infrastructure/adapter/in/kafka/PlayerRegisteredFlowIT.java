@@ -20,7 +20,7 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
-import com.nebula.rolemanager.domain.port.out.ProfilPort;
+import com.nebula.rolemanager.domain.port.out.RoleAssignmentPort;
 import com.nebula.rolemanager.event.PlayerRegisteredEvent;
 
 @SpringBootTest
@@ -35,18 +35,18 @@ class PlayerRegisteredFlowIT {
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
-    private ProfilPort profilPort;
+    private RoleAssignmentPort roleAssignmentPort;
 
     @Autowired
     private EmbeddedKafkaBroker broker;
 
     @Test
-    void validEventCreatesProfil() {
+    void validEventAssignsDefaultRole() {
         kafkaTemplate.send("players.registered", "uuid-ok", new PlayerRegisteredEvent(
                 "evt-ok", 1, "2026-07-18T10:00:00Z", "uuid-ok", "alice", "EU"));
 
         await().atMost(Duration.ofSeconds(15))
-                .untilAsserted(() -> assertThat(profilPort.existsByPlayerId("uuid-ok")).isTrue());
+                .untilAsserted(() -> assertThat(roleAssignmentPort.existsByPlayerId("uuid-ok")).isTrue());
     }
 
     @Test

@@ -9,18 +9,21 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
 
-    public static final String PROFIL_CREATED_TOPIC = "players.profil.created";
+    // Possédé par ce service : alimenté par le router Debezium (outbox).
+    public static final String ACCESS_ROLE_ASSIGNED_TOPIC = "access.role.assigned";
     public static final String TELEMETRY_PLAYER_ACTION_TOPIC = "telemetry.player.action";
-    // Topic possédé par service-identite : pas de bean NewTopic ici, seulement la constante.
+    // Topic possédé par service-sso : pas de bean NewTopic ici, seulement la constante.
     public static final String PLAYERS_REGISTERED_TOPIC = "players.registered";
     public static final String PLAYERS_REGISTERED_DLT_TOPIC = "players.registered.dlt";
 
-    // Fait métier : volume modéré, chaque message compte
+    // Fait métier : clé playerId (ordre garanti par joueur), 3 partitions,
+    // rétention 7 jours (ARCHITECTURE.md §9).
     @Bean
-    public NewTopic profilCreatedTopic() {
-        return TopicBuilder.name(PROFIL_CREATED_TOPIC)
-                .partitions(1)
+    public NewTopic accessRoleAssignedTopic() {
+        return TopicBuilder.name(ACCESS_ROLE_ASSIGNED_TOPIC)
+                .partitions(3)
                 .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(7 * 24 * 60 * 60 * 1000L))
                 .build();
     }
 

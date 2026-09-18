@@ -3,10 +3,11 @@ package com.nebula.rolemanager.infrastructure.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.nebula.rolemanager.application.CreateProfilUseCase;
-import com.nebula.rolemanager.application.ProfilService;
+import com.nebula.rolemanager.application.AssignDefaultRoleUseCase;
+import com.nebula.rolemanager.application.ChangeRoleUseCase;
+import com.nebula.rolemanager.application.RoleAssignmentQueryService;
 import com.nebula.rolemanager.domain.port.out.EventPublisherPort;
-import com.nebula.rolemanager.domain.port.out.ProfilPort;
+import com.nebula.rolemanager.domain.port.out.RoleAssignmentPort;
 
 /**
  * Composition root pour les classes application.* : celles-ci ne portent
@@ -17,12 +18,19 @@ import com.nebula.rolemanager.domain.port.out.ProfilPort;
 public class UseCaseConfig {
 
     @Bean
-    public ProfilService profilService(ProfilPort profilPort) {
-        return new ProfilService(profilPort);
+    public AssignDefaultRoleUseCase assignDefaultRoleUseCase(RoleAssignmentPort roleAssignmentPort,
+            EventPublisherPort eventPublisherPort) {
+        return new AssignDefaultRoleUseCase(roleAssignmentPort, eventPublisherPort);
     }
 
     @Bean
-    public CreateProfilUseCase createProfilUseCase(ProfilPort profilPort, EventPublisherPort eventPublisherPort) {
-        return new CreateProfilUseCase(profilPort, eventPublisherPort);
+    public ChangeRoleUseCase changeRoleUseCase(RoleAssignmentPort roleAssignmentPort,
+            EventPublisherPort eventPublisherPort) {
+        return new ChangeRoleUseCase(roleAssignmentPort, eventPublisherPort);
+    }
+
+    @Bean
+    public RoleAssignmentQueryService roleAssignmentQueryService(RoleAssignmentPort roleAssignmentPort) {
+        return new RoleAssignmentQueryService(roleAssignmentPort);
     }
 }

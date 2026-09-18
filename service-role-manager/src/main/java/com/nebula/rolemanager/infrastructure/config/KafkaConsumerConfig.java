@@ -16,7 +16,6 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.util.backoff.ExponentialBackOff;
 
-import com.nebula.rolemanager.application.dto.ProfilDto;
 import com.nebula.rolemanager.event.PlayerRegisteredEvent;
 
 @Configuration
@@ -54,27 +53,6 @@ public class KafkaConsumerConfig {
         var backOff = new ExponentialBackOff(500L, 2.0);
         backOff.setMaxAttempts(3);
         factory.setCommonErrorHandler(new DefaultErrorHandler(recoverer, backOff));
-        return factory;
-    }
-
-    /**
-     * Factory dédiée à players.profil.created : ce topic est alimenté par le
-     * router d'événements Debezium (Outbox), pas par un producer Spring — les
-     * messages n'ont donc pas de header __TypeId__. Sans ErrorHandlingDeserializer,
-     * le container ne peut pas traiter la SerializationException qui en résulte
-     * et rejoue indéfiniment le même message en boucle serrée (constaté en
-     * vérification e2e : ~100% CPU en continu sur service-profil).
-     */
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, ProfilDto>
-            profilEventKafkaListenerContainerFactory(KafkaProperties kafkaProperties) {
-        Map<String, Object> props = kafkaProperties.buildConsumerProperties(null);
-        JsonDeserializer<ProfilDto> jsonDeserializer = new JsonDeserializer<>(ProfilDto.class, false);
-        ErrorHandlingDeserializer<ProfilDto> valueDeserializer = new ErrorHandlingDeserializer<>(jsonDeserializer);
-
-        var factory = new ConcurrentKafkaListenerContainerFactory<String, ProfilDto>();
-        factory.setConsumerFactory(new DefaultKafkaConsumerFactory<>(
-                props, new StringDeserializer(), valueDeserializer));
         return factory;
     }
 }
